@@ -4,6 +4,10 @@
 *.o
 *.obj
 
+# Logs
+*.log
+*.tlog
+
 # Precompiled Headers
 *.gch
 *.pch
@@ -20,7 +24,6 @@
 *.lai
 *.la
 *.a
-*.lib
 
 # Executables
 *.exe
