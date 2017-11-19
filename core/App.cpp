@@ -3,13 +3,20 @@
 namespace cga
 {
 
-App::App(const char* wndTitle)
+App::App(const char* wndTitle, bool antialiasing)
 {
 	int wndStyle = sf::Style::Titlebar | sf::Style::Close;
+	
 	sf::ContextSettings settings;
-	settings.antialiasingLevel = 4;
+	if (antialiasing)
+	{
+		settings.antialiasingLevel = 4;
+	}
+
 	m_window.reset(new sf::RenderWindow(sf::VideoMode(1300, 600), wndTitle, wndStyle, settings));
 	m_renderQueue.reset(new cga::RenderQueue(m_window.get()));
+
+	m_window->setFramerateLimit(60);
 }
 
 App::~App()
@@ -41,10 +48,12 @@ void App::Run()
 					break;
 			}
 
-			m_window->clear(sf::Color::White);
-			m_renderQueue->Render();
-			m_window->display();
+			
 		}
+
+		m_window->clear(sf::Color::White);
+		m_renderQueue->Render();
+		m_window->display();
 	}
 }
 

@@ -6,6 +6,7 @@ RecursionRenderJob::RecursionRenderJob(sf::Vector2f center, int recursionDepth, 
 	static const float PI = 3.1415f;
 	static const float PI_DOUBLE = 2.f * PI;
 
+	// Add initial equal-sized triangle
 	sf::Vector2f currentTriangle[3] {
 		center + sf::Vector2f(0.f, -280.f),
 		center + sf::Vector2f(-242.5f, 140.f),

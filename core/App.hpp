@@ -9,7 +9,7 @@ namespace cga
 class App
 {
 public:
-	App(const char* wndTitle);
+	App(const char* wndTitle, bool antialiasing = true);
 	~App();
 
 	void Run();
