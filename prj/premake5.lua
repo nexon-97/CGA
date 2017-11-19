@@ -5,7 +5,8 @@ workspace "CGA"
 	
 	includedirs
 	{
-		"../sfml/include"
+		"../sfml/include",
+		".."
 	}
 	
 	libdirs
@@ -29,41 +30,17 @@ workspace "CGA"
 		targetdir "../bin"
 		links {  }
 		
+include "../archimedean_spiral/prj/premake5"
 
 project "Core"
 	kind "StaticLib"
 	location "vs2013/core"
 	debugdir ".."
 
-	files 
-	{ 
-		"../core/**.h", 
-		"../core/**.hpp", 
-		"../core/**.c", 
-		"../core/**.cpp" 
-	}
+	files { "../core/**" }
 
 	configuration "Debug"
 		targetname "Core_d"
 
 	configuration "Release"
 		targetname "Core"
-		
-project "Selector"
-	kind "ConsoleApp"
-	location "vs2013/selector"
-	debugdir ".."
-
-	files 
-	{ 
-		"../selector/**.h", 
-		"../selector/**.hpp", 
-		"../selector/**.c", 
-		"../selector/**.cpp" 
-	}
-
-	configuration "Debug"
-		targetname "Selector_d"
-
-	configuration "Release"
-		targetname "Selector"
