@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include <sstream>
 
 namespace cga
@@ -32,15 +33,15 @@ T SafeInput(const char* msg)
 template <typename T>
 T RangeInput(const char* msg, T min, T max)
 {
-	float result;
+	T result;
 	
 	std::stringstream hintSs;
 	hintSs << msg << " [" << min << "; " << max << "]: ";
 	
 	while (true)
 	{
-		result = cga::SafeInput<float>(hintSs.str().c_str());
-		if (result < 0.5f || result > 4.f)
+		result = cga::SafeInput<T>(hintSs.str().c_str());
+		if (result < min || result > max)
 		{
 			std::cout << "Invalid range!" << std::endl;
 		}
