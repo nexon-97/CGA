@@ -1,13 +1,28 @@
 #include <iostream>
-#include "SFML/Main.hpp"
-#include "SFML/Graphics.hpp"
+
+#include "core/App.hpp"
+#include "core/RenderQueue.hpp"
+#include "core/SafeInput.hpp"
+
+#include "ArchimedeanSpiralRenderJob.hpp"
 
 int main()
 {
-	sf::Window hwnd;
-	hwnd.display();
-	std::cout << "Hello";
+	float linearSpeed = cga::SafeInput<float>("Enter linear speed (px): ");
+	float radialSpeed = cga::SafeInput<float>("Enter linear speed (rad): ");
+	float accuracy = cga::RangeInput<float>("Enter accuracy", 0.5f, 4.f);
 
-	system("pause");
+	cga::App app("Archimedean Spiral");
+	auto wnd = app.GetWindow();
+	auto renderQueue = app.GetRenderQueue();
+
+	auto wndSize = wnd->getSize();
+	sf::Vector2f center(float(wndSize.x) / 2.f, float(wndSize.y) / 2.f);
+	
+	auto renderJob = std::make_shared<ArchimedeanSpiralRenderJob>(center, linearSpeed, radialSpeed, accuracy);
+	renderQueue->AddJob(renderJob);
+
+	app.Run();
+
 	return 0;
 }
