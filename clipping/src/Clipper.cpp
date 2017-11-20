@@ -24,13 +24,16 @@ sf::Vector2f Clipper::FindNormal(const sf::Vector2f& a, const sf::Vector2f& b, c
 	return n;
 }
 
-Clipper::ClippingResult Clipper::Clip(const sf::VertexArray& clipper, const sf::VertexArray& clippee)
+Clipper::ClippingResult Clipper::Clip(const sf::VertexArray& clipper, const sf::VertexArray& clippee, bool booleanMode, bool lineStrip)
 {
 	Clipper::ClippingResult result;
 	result.remain.setPrimitiveType(sf::Lines);
 	result.clipped.setPrimitiveType(sf::Lines);
 
-	for (int ptIdx = 0, sz = clippee.getVertexCount() - 1; ptIdx < sz; ptIdx++)
+	int lineCount = (clippee.getPrimitiveType() == sf::LineStrip) ? clippee.getVertexCount() - 1 : clippee.getVertexCount() / 2;
+	int step = (clippee.getPrimitiveType() == sf::LineStrip) ? 1 : 2;
+
+	for (int ptIdx = 0; ptIdx < lineCount; ptIdx += step)
 	{
 		sf::Vector2f b = clippee[ptIdx + 1].position;
 		sf::Vector2f a = clippee[ptIdx].position;
@@ -42,7 +45,7 @@ Clipper::ClippingResult Clipper::Clip(const sf::VertexArray& clipper, const sf::
 		float tLeave = 1.0f;
 
 		sf::Vector2f boundary = clipper[clipper.getVertexCount() - 2].position;
-		for (int i = 0, count = clipper.getVertexCount() - 1; i < count; i++) 
+		for (int i = 0, count = clipper.getVertexCount() - 1; i < count; i++)
 		{
 			sf::Vector2f edge_p0(clipper[i + 0].position);
 			sf::Vector2f edge_p1(clipper[i + 1].position);
@@ -78,23 +81,48 @@ Clipper::ClippingResult Clipper::Clip(const sf::VertexArray& clipper, const sf::
 
 		if (tEnter > tLeave) 
 		{
-			continue;
+			if (booleanMode)
+			{
+				result.clipped.append(sf::Vertex(a, sf::Color::Red));
+				result.clipped.append(sf::Vertex(b, sf::Color::Red));
+			}
+			else
+			{
+				result.remain.append(sf::Vertex(a, sf::Color::Black));
+				result.remain.append(sf::Vertex(b, sf::Color::Black));
+			}
 		}
+		else
+		{
+			sf::Vector2f clipped_p0;
+			clipped_p0.x = a.x + (d.x * tEnter);
+			clipped_p0.y = a.y + (d.y * tEnter);
 
-		sf::Vector2f clipped_p0;
-		clipped_p0.x = a.x + (d.x * tEnter);
-		clipped_p0.y = a.y + (d.y * tEnter);
+			sf::Vector2f clipped_p1;
+			clipped_p1.x = a.x + (d.x * tLeave);
+			clipped_p1.y = a.y + (d.y * tLeave);
 
-		sf::Vector2f clipped_p1;
-		clipped_p1.x = a.x + (d.x * tLeave);
-		clipped_p1.y = a.y + (d.y * tLeave);
+			if (booleanMode)
+			{
+				result.clipped.append(sf::Vertex(a, sf::Color::Red));
+				result.clipped.append(sf::Vertex(clipped_p1, sf::Color::Red));
+				result.remain.append(sf::Vertex(clipped_p0, sf::Color::Black));
+				result.remain.append(sf::Vertex(clipped_p1, sf::Color::Black));
+				result.clipped.append(sf::Vertex(clipped_p1, sf::Color::Red));
+				result.clipped.append(sf::Vertex(b, sf::Color::Red));
+			}
+			else
+			{
+				result.remain.append(sf::Vertex(a, sf::Color::Black));
+				result.remain.append(sf::Vertex(clipped_p1, sf::Color::Black));
+				result.clipped.append(sf::Vertex(clipped_p0, sf::Color::Red));
+				result.clipped.append(sf::Vertex(clipped_p1, sf::Color::Red));
+				result.remain.append(sf::Vertex(clipped_p1, sf::Color::Black));
+				result.remain.append(sf::Vertex(b, sf::Color::Black));
+			}
 
-		result.remain.append(sf::Vertex(a, sf::Color::Red));
-		result.remain.append(sf::Vertex(clipped_p1, sf::Color::Red));
-		result.clipped.append(sf::Vertex(clipped_p0, sf::Color::Black));
-		result.clipped.append(sf::Vertex(clipped_p1, sf::Color::Black));
-		result.remain.append(sf::Vertex(clipped_p1, sf::Color::Red));
-		result.remain.append(sf::Vertex(b, sf::Color::Red));
+			
+		}
 	}
 
 	return result;

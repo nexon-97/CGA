@@ -1,4 +1,5 @@
 #include "ClippingRenderJob.hpp"
+#include "core/InputManager.hpp"
 
 ClippingRenderJob::ClippingRenderJob(sf::Vector2f size)
 	: m_starMovement(sf::FloatRect(150.f, 150.f, size.x - 300.f, size.y - 300.f))
@@ -9,6 +10,13 @@ ClippingRenderJob::ClippingRenderJob(sf::Vector2f size)
 	m_backShape.append(sf::Vertex(sf::Vector2f(50.f, size.y - 50.f), sf::Color::Black));
 	m_backShape.append(sf::Vertex(sf::Vector2f(50.f, 50.f), sf::Color::Black));
 	m_backShape.setPrimitiveType(sf::LineStrip);
+
+	m_boxShape.append(sf::Vertex(sf::Vector2f(100.f, 100.f), sf::Color::Black));
+	m_boxShape.append(sf::Vertex(sf::Vector2f(250.f, 100.f), sf::Color::Black));
+	m_boxShape.append(sf::Vertex(sf::Vector2f(250.f, 250.f), sf::Color::Black));
+	m_boxShape.append(sf::Vertex(sf::Vector2f(100.f, 250.f), sf::Color::Black));
+	m_boxShape.append(sf::Vertex(sf::Vector2f(100.f, 100.f), sf::Color::Black));
+	m_boxShape.setPrimitiveType(sf::LineStrip);
 
 	sf::Vector2f center(300.f, 300.f);
 	GenerateStar(center, 150.f);
@@ -21,6 +29,23 @@ sf::Vector2f ClippingRenderJob::Lerp(const sf::Vector2f& a, const sf::Vector2f& 
 
 void ClippingRenderJob::Render(sf::RenderWindow* wnd)
 {
+	auto inputManager = cga::InputManager::GetInstance();
+
+	if (inputManager.IsMouseDown(sf::Mouse::Button::Left))
+	{
+		m_starMovement.Pause();
+		m_starMovement.SetPosition(inputManager.GetMousePosition());
+	}
+	else
+	{
+		m_starMovement.Resume();
+	}
+
+	/*if (inputManager.IsMouseDown(sf::Mouse::Button::Right))
+		m_starMovement.Pause();
+	else
+		m_starMovement.Resume();*/
+
 	m_starMovement.Update();
 
 	sf::VertexArray starCopy = m_starShape;
@@ -30,11 +55,17 @@ void ClippingRenderJob::Render(sf::RenderWindow* wnd)
 		starCopy[i].position = starTransform.transformPoint(starCopy[i].position);
 	}
 
-	auto starClipResult = m_clipper.Clip(m_backShape, starCopy);
+	auto boxClipResult = m_clipper.Clip(m_boxShape, starCopy, false);
+	//auto wndClipResult = m_clipper.Clip(m_backShape, boxClipResult.remain, true);
+	//auto wndClipResult = m_clipper.Clip(m_backShape, boxClipResult.remain, true);
 
 	wnd->draw(m_backShape);
-	wnd->draw(starClipResult.remain);
-	wnd->draw(starClipResult.clipped);
+	wnd->draw(m_boxShape);
+
+	//wnd->draw(wndClipResult.clipped);
+	//wnd->draw(wndClipResult.remain);
+	wnd->draw(boxClipResult.remain);
+	wnd->draw(boxClipResult.clipped);
 }
 
 void ClippingRenderJob::GenerateStar(const sf::Vector2f& center, float radius)

@@ -9,7 +9,7 @@ int main()
 	float rotationStep = cga::RangeInput<float>("Enter rotation step", 0.f, 3.14f * 2.f);
 	int recursionDepth = cga::RangeInput<int>("Enter recursion depth", 3, 20);
 
-	cga::App app("Triangle recursion");
+	cga::App app("Triangle recursion", false);
 	auto wnd = app.GetWindow();
 	auto renderQueue = app.GetRenderQueue();
 

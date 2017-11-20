@@ -12,7 +12,7 @@ int main()
 	float radialSpeed = cga::SafeInput<float>("Enter linear speed (rad): ");
 	float accuracy = cga::RangeInput<float>("Enter accuracy", 0.5f, 4.f);
 
-	cga::App app("Archimedean Spiral");
+	cga::App app("Archimedean Spiral", false);
 	auto wnd = app.GetWindow();
 	auto renderQueue = app.GetRenderQueue();
 

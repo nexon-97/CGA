@@ -1,4 +1,5 @@
 #include "App.hpp"
+#include "InputManager.hpp"
 
 namespace cga
 {
@@ -45,6 +46,15 @@ void App::Run()
 			{
 				case sf::Event::Closed:
 					m_window->close();
+					break;
+				case sf::Event::MouseButtonPressed:
+					InputManager::GetInstance().SetMouseDown(event.mouseButton.button, true);
+					break;
+				case sf::Event::MouseButtonReleased:
+					InputManager::GetInstance().SetMouseDown(event.mouseButton.button, false);
+					break;
+				case sf::Event::MouseMoved:
+					InputManager::GetInstance().SetMousePosition(sf::Vector2f(event.mouseMove.x, event.mouseMove.y));
 					break;
 			}
 

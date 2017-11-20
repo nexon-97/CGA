@@ -11,6 +11,8 @@ StarMovement::StarMovement(sf::FloatRect boundingBox)
 
 void StarMovement::Update()
 {
+	if (m_isPaused) return;
+
 	auto position = m_starTransform.getPosition();
 	auto rotation = m_starTransform.getRotation();
 
@@ -50,4 +52,19 @@ void StarMovement::Update()
 const sf::Transformable& StarMovement::GetTransform() const
 {
 	return m_starTransform;
+}
+
+void StarMovement::SetPosition(const sf::Vector2f& pos)
+{
+	m_starTransform.setPosition(pos);
+}
+
+void StarMovement::Pause()
+{
+	m_isPaused = true;
+}
+
+void StarMovement::Resume()
+{
+	m_isPaused = false;
 }

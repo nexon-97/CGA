@@ -20,9 +20,9 @@ private:
 	void GenerateStar(const sf::Vector2f& center, float radius);
 	sf::Vector2f Lerp(const sf::Vector2f& a, const sf::Vector2f& b, float x);
 	
-	sf::Transformable m_starTransform;
 	sf::VertexArray m_backShape;
 	sf::VertexArray m_starShape;
+	sf::VertexArray m_boxShape;
 	StarMovement m_starMovement;
 	Clipper m_clipper;
 };

@@ -18,7 +18,7 @@ public:
 		sf::VertexArray clipped;
 	};
 
-	ClippingResult Clip(const sf::VertexArray& clipper, const sf::VertexArray& clippee);
+	ClippingResult Clip(const sf::VertexArray& clipper, const sf::VertexArray& clippee, bool booleanMode, bool lineStrip = true);
 
 private:
 	float Scalar(const sf::Vector2f& a, const sf::Vector2f& b);
