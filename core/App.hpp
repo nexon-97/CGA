@@ -1,7 +1,7 @@
 #pragma once
 #include "RenderQueue.hpp"
-#include <SFML/Graphics.hpp>
 #include <memory>
+#include <SDL.h>
 
 namespace cga
 {
@@ -12,14 +12,21 @@ public:
 	App(const char* wndTitle, bool antialiasing = true);
 	~App();
 
+	bool Init();
 	void Run();
 
-	sf::RenderWindow* GetWindow() const;
+	SDL_Window* GetWindow() const;
+	SDL_Renderer* GetRenderer() const;
 	cga::RenderQueue* GetRenderQueue() const;
 
 private:
-	std::unique_ptr<sf::RenderWindow> m_window;
 	std::unique_ptr<cga::RenderQueue> m_renderQueue;
+
+	const char* m_wndTitle = nullptr;
+	SDL_Window* m_sdlWindow = nullptr;
+	SDL_Renderer* m_renderer = nullptr;
+	SDL_Surface* m_sdlScreenSurface = nullptr;
+	bool m_sdlInitialized = false;
 };
 
 }

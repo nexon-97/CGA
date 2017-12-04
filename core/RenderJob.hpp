@@ -1,9 +1,7 @@
 #pragma once
 
-namespace sf
-{
-class RenderWindow;
-}
+struct SDL_Window;
+struct SDL_Renderer;
 
 namespace cga
 {
@@ -11,7 +9,7 @@ namespace cga
 class RenderJob
 {
 public:
-	virtual void Render(sf::RenderWindow* wnd) = 0;
+	virtual void Render(SDL_Window* wnd, SDL_Renderer* renderer) = 0;
 };
 
 }

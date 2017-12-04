@@ -1,7 +1,6 @@
 #include "core/RenderJob.hpp"
 #include "StarMovement.hpp"
 #include "Clipper.hpp"
-#include <SFML/Graphics.hpp>
 #include <vector>
 
 namespace sf
@@ -9,7 +8,7 @@ namespace sf
 class Vertex;
 };
 
-class ClippingRenderJob : public cga::RenderJob
+/*class ClippingRenderJob : public cga::RenderJob
 {
 public:
 	ClippingRenderJob(sf::Vector2f size);
@@ -26,3 +25,4 @@ private:
 	StarMovement m_starMovement;
 	Clipper m_clipper;
 };
+*/

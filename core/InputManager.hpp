@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include <SFML/System/Vector2.hpp>
 
 namespace cga
 {
@@ -12,11 +11,11 @@ public:
 
 	bool IsMouseDown(int idx) const;
 	void SetMouseDown(int idx, bool down);
-	void SetMousePosition(const sf::Vector2f& position);
-	const sf::Vector2f& GetMousePosition() const;
+	//void SetMousePosition(const sf::Vector2f& position);
+	//const sf::Vector2f& GetMousePosition() const;
 
 private:
-	sf::Vector2f m_mousePos;
+	//sf::Vector2f m_mousePos;
 	bool m_isMouseDown[2] { false };
 };
 

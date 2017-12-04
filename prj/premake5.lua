@@ -5,28 +5,27 @@ workspace "CGA"
 	
 	includedirs
 	{
-		"../sfml/include",
+		"../sdl/include",
+		"../math/include",
 		".."
 	}
 	
 	libdirs
 	{
-		"../sfml/lib"
+		"../sdl/lib"
 	}
 	
-	defines { "WIN32", "_WINDOWS", "SFML_STATIC" }
-	links { "openal32.lib", "freetype.lib", "jpeg.lib", "opengl32.lib", "winmm.lib", "gdi32.lib" }
+	defines { "WIN32", "_WINDOWS" }
+	links { "SDL2.lib" }
 	
 	configuration "Debug"
 		defines { "_DEBUG", "DEBUG", "PROFILE" }
-		links { "sfml-main-d.lib", "sfml-window-s-d.lib", "sfml-system-s-d.lib", "sfml-graphics-s-d.lib" }
 		targetdir "../bin"
 		links {  }
 		symbols "on"
 
 	configuration "Release"
 		defines { "NDEBUG" }
-		links { "sfml-main.lib", "sfml-window-s.lib", "sfml-system-s.lib", "sfml-graphics-s.lib" }
 		targetdir "../bin"
 		links {  }
 		
@@ -40,9 +39,23 @@ project "Core"
 	debugdir ".."
 
 	files { "../core/**" }
+	links { "GLM" }
 
 	configuration "Debug"
 		targetname "Core_d"
 
 	configuration "Release"
 		targetname "Core"
+
+project "GLM"
+	kind "StaticLib"
+	location "vs2013/glm"
+	debugdir ".."
+
+	files { "../glm/**.h", "../glm/**.c", "../glm/**.cpp", "../glm/**.hpp", "../glm/**.inl" }
+
+	configuration "Debug"
+		targetname "GLM_d"
+
+	configuration "Release"
+		targetname "GLM"

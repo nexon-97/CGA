@@ -6,7 +6,7 @@
 
 int main()
 {
-	cga::App app("Clipping shapes", false);
+	/*cga::App app("Clipping shapes", false);
 	auto wnd = app.GetWindow();
 	auto renderQueue = app.GetRenderQueue();
 
@@ -14,7 +14,7 @@ int main()
 	auto renderJob = std::make_shared<ClippingRenderJob>(sf::Vector2f(wndSize));
 	renderQueue->AddJob(renderJob);
 
-	app.Run();
-
+	app.Run();*/
+	
 	return 0;
 }

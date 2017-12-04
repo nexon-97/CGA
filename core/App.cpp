@@ -1,33 +1,30 @@
 #include "App.hpp"
 #include "InputManager.hpp"
+#include "Brezenheim.hpp"
+#include <iostream>
 
 namespace cga
 {
 
 App::App(const char* wndTitle, bool antialiasing)
+	: m_wndTitle(wndTitle)
 {
-	int wndStyle = sf::Style::Titlebar | sf::Style::Close;
 	
-	sf::ContextSettings settings;
-	if (antialiasing)
-	{
-		settings.antialiasingLevel = 4;
-	}
-
-	m_window.reset(new sf::RenderWindow(sf::VideoMode(1300, 600), wndTitle, wndStyle, settings));
-	m_renderQueue.reset(new cga::RenderQueue(m_window.get()));
-
-	m_window->setFramerateLimit(60);
 }
 
 App::~App()
 {
-
+	if (m_sdlInitialized)
+	{
+		SDL_DestroyRenderer(m_renderer);
+		SDL_DestroyWindow(m_sdlWindow);
+		SDL_Quit();
+	}
 }
 
-sf::RenderWindow* App::GetWindow() const
+SDL_Window* App::GetWindow() const
 {
-	return m_window.get();
+	return m_sdlWindow;
 }
 
 cga::RenderQueue* App::GetRenderQueue() const
@@ -35,35 +32,50 @@ cga::RenderQueue* App::GetRenderQueue() const
 	return m_renderQueue.get();
 }
 
+SDL_Renderer* App::GetRenderer() const
+{
+	return m_renderer;
+}
+
+bool App::Init()
+{
+	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+		return false;
+
+	m_sdlInitialized = true;
+	if (SDL_CreateWindowAndRenderer(1300, 600, SDL_WINDOW_SHOWN, &m_sdlWindow, &m_renderer) < 0)
+		return false;
+	
+	m_renderQueue = std::make_unique<cga::RenderQueue>(m_sdlWindow, m_renderer);
+	m_sdlScreenSurface = SDL_GetWindowSurface(m_sdlWindow);
+
+	return true;
+}
+
 void App::Run()
 {
-	while (m_window->isOpen())
+	bool quit = false;
+	
+	while (!quit)
 	{
-		sf::Event event;
-		while (m_window->pollEvent(event))
-        {
-			switch (event.type)
+		SDL_Event e;
+		while (SDL_PollEvent(&e) != 0)
+		{
+			switch (e.type)
 			{
-				case sf::Event::Closed:
-					m_window->close();
-					break;
-				case sf::Event::MouseButtonPressed:
-					InputManager::GetInstance().SetMouseDown(event.mouseButton.button, true);
-					break;
-				case sf::Event::MouseButtonReleased:
-					InputManager::GetInstance().SetMouseDown(event.mouseButton.button, false);
-					break;
-				case sf::Event::MouseMoved:
-					InputManager::GetInstance().SetMousePosition(sf::Vector2f(event.mouseMove.x, event.mouseMove.y));
-					break;
+			case SDL_QUIT:
+				quit = true;
+				break;
 			}
-
-			
 		}
 
-		m_window->clear(sf::Color::White);
+		SDL_FillRect(m_sdlScreenSurface, nullptr, SDL_MapRGB(m_sdlScreenSurface->format, 50, 50, 50));		
+		Brezenheim::ResetDashFactor();
+
 		m_renderQueue->Render();
-		m_window->display();
+
+		SDL_RenderPresent(m_renderer);
+		SDL_Delay(25);
 	}
 }
 

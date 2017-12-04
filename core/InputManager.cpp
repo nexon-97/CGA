@@ -19,7 +19,7 @@ void InputManager::SetMouseDown(int idx, bool down)
 	m_isMouseDown[idx] = down;
 }
 
-void InputManager::SetMousePosition(const sf::Vector2f& position)
+/*void InputManager::SetMousePosition(const sf::Vector2f& position)
 {
 	m_mousePos = position;
 }
@@ -27,6 +27,6 @@ void InputManager::SetMousePosition(const sf::Vector2f& position)
 const sf::Vector2f& InputManager::GetMousePosition() const
 {
 	return m_mousePos;
-}
+}*/
 
 }

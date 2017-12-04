@@ -2,10 +2,8 @@
 #include <vector>
 #include <memory>
 
-namespace sf
-{
-class RenderWindow;
-}
+struct SDL_Window;
+struct SDL_Renderer;
 
 namespace cga
 {
@@ -16,10 +14,10 @@ namespace cga
 	class RenderQueue
 	{
 	public:
-		RenderQueue(sf::RenderWindow* wnd);
+		explicit RenderQueue(SDL_Window* wnd, SDL_Renderer* renderer);
 		~RenderQueue() = default;
 
-		void AddJob(const RenderJobPtr& job);
+		void QAddJob(const RenderJobPtr& job);
 		void Clear();
 
 		const JobsVector& GetJobs() const;
@@ -27,7 +25,8 @@ namespace cga
 		void Render();
 
 	private:
-		sf::RenderWindow* m_window = nullptr;
+		SDL_Window* m_window = nullptr;
+		SDL_Renderer* m_renderer = nullptr;
 		JobsVector m_jobs;
 	};
 }

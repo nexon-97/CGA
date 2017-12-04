@@ -1,5 +1,4 @@
 #include "core/RenderJob.hpp"
-#include <SFML/Graphics.hpp>
 #include <vector>
 
 namespace sf
@@ -7,7 +6,7 @@ namespace sf
 class Vertex;
 };
 
-class StarMovement
+/*class StarMovement
 {
 public:
 	StarMovement(sf::FloatRect boundingBox);
@@ -24,4 +23,4 @@ private:
 	sf::FloatRect m_boundingBox;
 	bool m_movementDirection[2];
 	bool m_isPaused = false;
-};
+};*/

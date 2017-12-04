@@ -4,12 +4,13 @@
 namespace cga
 {
 
-RenderQueue::RenderQueue(sf::RenderWindow* wnd)
+RenderQueue::RenderQueue(SDL_Window* wnd, SDL_Renderer* renderer)
 	: m_window(wnd)
+	, m_renderer(renderer)
 {
 }
 
-void RenderQueue::AddJob(const RenderJobPtr& job)
+void RenderQueue::QAddJob(const RenderJobPtr& job)
 {
 	m_jobs.push_back(job);
 }
@@ -28,7 +29,7 @@ void RenderQueue::Render()
 {
 	for (const auto& job : GetJobs())
 	{
-		job->Render(m_window);
+		job->Render(m_window, m_renderer);
 	}
 }
 

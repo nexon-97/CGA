@@ -1,9 +1,9 @@
 #include <iostream>
-
 #include "ArchimedeanSpiralRenderJob.hpp"
 
-ArchimedeanSpiralRenderJob::ArchimedeanSpiralRenderJob(
-	sf::Vector2f center, float linearSpeed, float radialSpeed, float accuracy)
+#include <core/Brezenheim.hpp>
+
+ArchimedeanSpiralRenderJob::ArchimedeanSpiralRenderJob(const glm::vec2i& center, float linearSpeed, float radialSpeed, float accuracy)
 {
 	int maxLength = 300;
 
@@ -15,45 +15,43 @@ ArchimedeanSpiralRenderJob::ArchimedeanSpiralRenderJob(
 	int maxX = int(maxLength * accuracy);
 
 	// Solid line
-	m_lines.push_back(sf::Vertex(center, sf::Color::Black));
+	m_points.push_back(center);
 	for (int x = 1; x < maxX; x++)
 	{
 		float radius = float(x) / accuracy;
 		float phi = x * phiStep / accuracy;
 
-		sf::Vector2f offset(cos(phi) * radius, sin(phi) * radius);
-		sf::Vertex nextVertex(center + offset, sf::Color::Black);
-		m_lines.push_back(nextVertex);
+		glm::vec2i offset(cos(phi) * radius, sin(phi) * radius);
+		m_points.push_back(center + offset);
 	}
 
 	// Dashed line
-	sf::Vertex lastVertex = sf::Vertex(center, sf::Color::Black);
+	m_pointsReverse.push_back(center);
 	for (int x = -1; x > -maxX; x--)
 	{
 		float radius = float(x) / accuracy;
 		float phi = x * phiStep / accuracy;
 
-		sf::Vector2f offset(cos(phi) * radius, sin(phi) * radius);
-		sf::Vertex nextVertex(center + offset);
-
-		if (x % 2)
-		{
-			nextVertex.color = sf::Color::Transparent;
-		}
-		else
-		{
-			nextVertex.color = sf::Color::Black;
-		}
-
-		m_linesReverse.push_back(lastVertex);
-		m_linesReverse.push_back(nextVertex);
-
-		lastVertex = nextVertex;
+		glm::vec2i offset(cos(phi) * radius, sin(phi) * radius);
+		m_pointsReverse.push_back(center + offset);
 	}
 }
 
-void ArchimedeanSpiralRenderJob::Render(sf::RenderWindow* wnd)
+void ArchimedeanSpiralRenderJob::Render(SDL_Window* wnd, SDL_Renderer* renderer)
 {
-	wnd->draw(m_lines.data(), m_lines.size(), sf::LineStrip);
-	wnd->draw(m_linesReverse.data(), m_linesReverse.size(), sf::Lines);
+	for (int i = 0, sz = m_points.size() - 1; i < sz; i++)
+	{
+		const auto& from = m_points[i];
+		const auto& to = m_points[i + 1];
+
+		cga::Brezenheim::DrawLine(renderer, from, to, glm::vec3i(255, 255, 255), false);
+	}
+
+	for (int i = 0, sz = m_pointsReverse.size() - 1; i < sz; i++)
+	{
+		const auto& from = m_pointsReverse[i];
+		const auto& to = m_pointsReverse[i + 1];
+
+		cga::Brezenheim::DrawLine(renderer, from, to, glm::vec3i(255, 255, 255), true);
+	}
 }

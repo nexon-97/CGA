@@ -1,7 +1,7 @@
 #include "ClippingRenderJob.hpp"
 #include "core/InputManager.hpp"
 
-ClippingRenderJob::ClippingRenderJob(sf::Vector2f size)
+/*ClippingRenderJob::ClippingRenderJob(sf::Vector2f size)
 	: m_starMovement(sf::FloatRect(150.f, 150.f, size.x - 300.f, size.y - 300.f))
 {
 	m_backShape.append(sf::Vertex(sf::Vector2f(50.f, 50.f), sf::Color::Black));
@@ -40,11 +40,6 @@ void ClippingRenderJob::Render(sf::RenderWindow* wnd)
 	{
 		m_starMovement.Resume();
 	}
-
-	/*if (inputManager.IsMouseDown(sf::Mouse::Button::Right))
-		m_starMovement.Pause();
-	else
-		m_starMovement.Resume();*/
 
 	m_starMovement.Update();
 
@@ -89,3 +84,4 @@ void ClippingRenderJob::GenerateStar(const sf::Vector2f& center, float radius)
 	m_starShape.append(sf::Vertex(starPoints[0], sf::Color::Black));
 	m_starShape.setPrimitiveType(sf::LineStrip);
 }
+*/

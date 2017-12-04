@@ -1,20 +1,15 @@
 #include "core/RenderJob.hpp"
-#include "SFML/Graphics.hpp"
 #include <vector>
-
-namespace sf
-{
-class Vertex;
-};
+#include "core/Vertex.hpp"
 
 class ArchimedeanSpiralRenderJob : public cga::RenderJob
 {
 public:
-	ArchimedeanSpiralRenderJob(sf::Vector2f center, float linearSpeed, float radialSpeed, float accuracy);
+	ArchimedeanSpiralRenderJob(const glm::vec2i& center, float linearSpeed, float radialSpeed, float accuracy);
 
-	virtual void Render(sf::RenderWindow* wnd) override;
+	virtual void Render(SDL_Window* wnd, SDL_Renderer* renderer) override;
 
 private:
-	std::vector <sf::Vertex> m_lines;
-	std::vector <sf::Vertex> m_linesReverse;
+	std::vector<glm::vec2i> m_points;
+	std::vector<glm::vec2i> m_pointsReverse;
 };
