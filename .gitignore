@@ -80,3 +80,23 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+*.vcxproj
+*.filters
+*.pdb
+*.ipch
+*.user
+*.ilk
+*.idb
+*.db
+*.sdf
+*.sln
+*.cache
+*.opendb
+
+bin/*.lib
+core/*.lib
+prj/.vs/CGA/v14/.suo
+prj/.vs/CGA/v15/.suo
+prj/.vs/CGA/v15/Solution.VC.db-shm
+prj/.vs/CGA/v15/Solution.VC.db-wal
