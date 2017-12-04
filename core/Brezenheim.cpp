@@ -85,4 +85,20 @@ void Brezenheim::DrawLine(SDL_Renderer* renderer, glm::vec2i from, glm::vec2i to
 	}
 }
 
+void Brezenheim::DrawPolygon(SDL_Renderer* renderer, glm::vec2i* start, int count, const glm::vec3i& color, bool dashed)
+{
+	for (int i = 0, sz = count - 1; i < sz; i++)
+	{
+		DrawLine(renderer, start[i], start[i + 1], color, dashed);
+	}
+}
+
+void Brezenheim::DrawLines(SDL_Renderer* renderer, glm::linei* lines, int count, const glm::vec3i& color, bool dashed)
+{
+	for (int i = 0; i < count; i++)
+	{
+		DrawLine(renderer, lines[i].topLeft, lines[i].bottomRight, color, dashed);
+	}
+}
+
 }

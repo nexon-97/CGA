@@ -1,22 +1,17 @@
 #include "core/RenderJob.hpp"
 #include <vector>
-
-namespace sf
-{
-class Vertex;
-};
+#include "core/Defines.hpp"
 
 class RecursionRenderJob : public cga::RenderJob
 {
 public:
-	RecursionRenderJob(glm::vec2i center, int recursionDepth, float rotationStep);
+	RecursionRenderJob(const glm::vec2i& center, int recursionDepth, float rotationStep);
 
-	virtual void Render(sf::RenderWindow* wnd) override;
+	virtual void Render(SDL_Window* wnd, SDL_Renderer* renderer) override;
 
 private:
 	void AddTriangle(glm::vec2i triangle[3]);
-	glm::vec2i Lerp(const glm::vec2i& a, const glm::vec2i& b, float x);
 
-	std::vector <sf::Vertex> m_lines;
+	std::vector<glm::vec2i> m_points;
 	int m_recursionDepth;
 };

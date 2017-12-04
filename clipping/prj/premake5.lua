@@ -1,5 +1,5 @@
 project "Clipping"
-	kind "ConsoleApp"
+	kind "WindowedApp"
 	location "vs2013"
 	debugdir "../.."
 

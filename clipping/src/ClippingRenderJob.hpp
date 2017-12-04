@@ -2,27 +2,25 @@
 #include "StarMovement.hpp"
 #include "Clipper.hpp"
 #include <vector>
+#include <core/Defines.hpp>
+#include <core/Utils.hpp>
 
-namespace sf
-{
-class Vertex;
-};
-
-/*class ClippingRenderJob : public cga::RenderJob
+class ClippingRenderJob : public cga::RenderJob
 {
 public:
-	ClippingRenderJob(sf::Vector2f size);
+	ClippingRenderJob(const glm::vec2i& size);
 
-	virtual void Render(sf::RenderWindow* wnd) override;
+	virtual void Render(SDL_Window* wnd, SDL_Renderer* renderer) override;
 
 private:
-	void GenerateStar(const sf::Vector2f& center, float radius);
-	sf::Vector2f Lerp(const sf::Vector2f& a, const sf::Vector2f& b, float x);
+	void GenerateStar(const glm::vec2i& center, float radius);
+	std::vector<glm::vec2i> TransformShape(const std::vector<glm::vec2i>& shape, const glm::mat3f& transform);
+	void CleanupClipResults(Clipper::ClippingResult& result);
 	
-	sf::VertexArray m_backShape;
-	sf::VertexArray m_starShape;
-	sf::VertexArray m_boxShape;
+	std::vector<glm::vec2i> m_backShape;
+	std::vector<glm::vec2i> m_starShape;
+	std::vector<glm::vec2i> m_boxShape;
+	cga::Pose m_boxPose;
 	StarMovement m_starMovement;
 	Clipper m_clipper;
 };
-*/

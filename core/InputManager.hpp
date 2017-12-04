@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <core/Defines.hpp>
 
 namespace cga
 {
@@ -11,12 +12,12 @@ public:
 
 	bool IsMouseDown(int idx) const;
 	void SetMouseDown(int idx, bool down);
-	//void SetMousePosition(const sf::Vector2f& position);
-	//const sf::Vector2f& GetMousePosition() const;
+	void SetMousePosition(const glm::vec2i& position);
+	const glm::vec2i& GetMousePosition() const;
 
 private:
-	//sf::Vector2f m_mousePos;
-	bool m_isMouseDown[2] { false };
+	glm::vec2i m_mousePos;
+	bool m_isMouseDown[4] { false };
 };
 
 }

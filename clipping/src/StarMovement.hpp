@@ -1,26 +1,24 @@
 #include "core/RenderJob.hpp"
 #include <vector>
+#include <core/Defines.hpp>
 
-namespace sf
-{
-class Vertex;
-};
-
-/*class StarMovement
+class StarMovement
 {
 public:
-	StarMovement(sf::FloatRect boundingBox);
+	StarMovement(const glm::recti& boundingBox);
 
 	void Update();
-	const sf::Transformable& GetTransform() const;
-	void SetPosition(const sf::Vector2f& pos);
+	const glm::mat3f& GetTransform() const;
+	void SetPosition(const glm::vec2i& pos);
 
 	void Pause();
 	void Resume();
 
 private:
-	sf::Transformable m_starTransform;
-	sf::FloatRect m_boundingBox;
+	glm::mat3f m_starTransform;
+	glm::recti m_boundingBox;
+	glm::vec2i m_position;
+	float m_rotation;
 	bool m_movementDirection[2];
 	bool m_isPaused = false;
-};*/
+};

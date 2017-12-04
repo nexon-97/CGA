@@ -1,37 +1,42 @@
 #include "ClippingRenderJob.hpp"
 #include "core/InputManager.hpp"
+#include "core/Brezenheim.hpp"
+#include <SDL.h>
+#include <algorithm>
 
-/*ClippingRenderJob::ClippingRenderJob(sf::Vector2f size)
-	: m_starMovement(sf::FloatRect(150.f, 150.f, size.x - 300.f, size.y - 300.f))
+ClippingRenderJob::ClippingRenderJob(const glm::vec2i& size)
+	: m_starMovement(glm::recti(glm::vec2i(150, 150), size - glm::vec2i(150, 150)))
 {
-	m_backShape.append(sf::Vertex(sf::Vector2f(50.f, 50.f), sf::Color::Black));
-	m_backShape.append(sf::Vertex(sf::Vector2f(size.x - 50.f, 50.f), sf::Color::Black));
-	m_backShape.append(sf::Vertex(sf::Vector2f(size.x - 50.f, size.y - 50.f), sf::Color::Black));
-	m_backShape.append(sf::Vertex(sf::Vector2f(50.f, size.y - 50.f), sf::Color::Black));
-	m_backShape.append(sf::Vertex(sf::Vector2f(50.f, 50.f), sf::Color::Black));
-	m_backShape.setPrimitiveType(sf::LineStrip);
+	m_backShape = 
+	{
+		glm::vec2i(50, 50),
+		glm::vec2i(size.x - 50, 50),
+		glm::vec2i(size.x - 50, size.y - 50),
+		glm::vec2i(50, size.y - 50),
+		glm::vec2i(50, 50),
+	};
 
-	m_boxShape.append(sf::Vertex(sf::Vector2f(100.f, 100.f), sf::Color::Black));
-	m_boxShape.append(sf::Vertex(sf::Vector2f(250.f, 100.f), sf::Color::Black));
-	m_boxShape.append(sf::Vertex(sf::Vector2f(250.f, 250.f), sf::Color::Black));
-	m_boxShape.append(sf::Vertex(sf::Vector2f(100.f, 250.f), sf::Color::Black));
-	m_boxShape.append(sf::Vertex(sf::Vector2f(100.f, 100.f), sf::Color::Black));
-	m_boxShape.setPrimitiveType(sf::LineStrip);
+	m_boxShape =
+	{
+		glm::vec2i(-75, -75),
+		glm::vec2i(+75, -75),
+		glm::vec2i(+75, +75),
+		glm::vec2i(-75, +75),
+		glm::vec2i(-75, -75),
+	};
 
-	sf::Vector2f center(300.f, 300.f);
+	m_boxPose = cga::Pose(glm::vec2i(200, 200), 0.f);
+
+	glm::vec2i center(300, 300);
 	GenerateStar(center, 150.f);
 }
 
-sf::Vector2f ClippingRenderJob::Lerp(const sf::Vector2f& a, const sf::Vector2f& b, float x)
+void ClippingRenderJob::Render(SDL_Window* wnd, SDL_Renderer* renderer)
 {
-	return sf::Vector2f(a.x + (b.x - a.x) * x, a.y + (b.y - a.y) * x);
-}
-
-void ClippingRenderJob::Render(sf::RenderWindow* wnd)
-{
+	// Manual input processing
 	auto inputManager = cga::InputManager::GetInstance();
 
-	if (inputManager.IsMouseDown(sf::Mouse::Button::Left))
+	if (inputManager.IsMouseDown(SDL_BUTTON_LEFT))
 	{
 		m_starMovement.Pause();
 		m_starMovement.SetPosition(inputManager.GetMousePosition());
@@ -41,47 +46,100 @@ void ClippingRenderJob::Render(sf::RenderWindow* wnd)
 		m_starMovement.Resume();
 	}
 
-	m_starMovement.Update();
-
-	sf::VertexArray starCopy = m_starShape;
-	sf::Transform starTransform = m_starMovement.GetTransform().getTransform();
-	for (int i = 0, sz = starCopy.getVertexCount(); i < sz; i++)
+	if (inputManager.IsMouseDown(SDL_BUTTON_RIGHT))
 	{
-		starCopy[i].position = starTransform.transformPoint(starCopy[i].position);
+		m_boxPose.position = inputManager.GetMousePosition();
 	}
 
-	auto boxClipResult = m_clipper.Clip(m_boxShape, starCopy, false);
-	//auto wndClipResult = m_clipper.Clip(m_backShape, boxClipResult.remain, true);
-	//auto wndClipResult = m_clipper.Clip(m_backShape, boxClipResult.remain, true);
+	m_starMovement.Update();
 
-	wnd->draw(m_backShape);
-	wnd->draw(m_boxShape);
+	// Transform box
+	auto boxTransform = cga::Utils::ConstructTransform(m_boxPose);
+	auto boxShape = TransformShape(m_boxShape, boxTransform);
+	auto star = TransformShape(m_starShape, m_starMovement.GetTransform());
 
-	//wnd->draw(wndClipResult.clipped);
-	//wnd->draw(wndClipResult.remain);
-	wnd->draw(boxClipResult.remain);
-	wnd->draw(boxClipResult.clipped);
+	// Perform clipping
+	auto backVsBoxClipResult = m_clipper.Clip(m_backShape, boxShape, true);
+	auto backVsStarClipResult = m_clipper.Clip(m_backShape, star, true);
+	auto boxVsStarClipResult = m_clipper.Clip(boxShape, star, false);
+
+	auto concatenateResults = [](const std::vector<glm::linei>& a, const std::vector<glm::linei>& b)
+	{
+		std::vector<glm::linei> result;
+		result.reserve(a.size() + b.size());
+		result.insert(result.end(), a.begin(), a.end());
+		result.insert(result.end(), b.begin(), b.end());
+
+		return result;
+	};
+	
+	backVsStarClipResult.remain = concatenateResults(backVsStarClipResult.remain, boxVsStarClipResult.remain);
+	backVsStarClipResult.clipped = concatenateResults(backVsStarClipResult.clipped, boxVsStarClipResult.clipped);
+	CleanupClipResults(backVsStarClipResult);
+
+	// Draw results
+	cga::Brezenheim::DrawPolygon(renderer, m_backShape.data(), m_backShape.size(), glm::vec3i(255, 255, 255), false);
+
+	cga::Brezenheim::DrawLines(renderer, backVsBoxClipResult.remain.data(), backVsBoxClipResult.remain.size(), glm::vec3i(255, 255, 255), false);
+	cga::Brezenheim::DrawLines(renderer, backVsBoxClipResult.clipped.data(), backVsBoxClipResult.clipped.size(), glm::vec3i(255, 0, 0), true);
+	cga::Brezenheim::DrawLines(renderer, backVsStarClipResult.remain.data(), backVsStarClipResult.remain.size(), glm::vec3i(255, 255, 255), false);
+	cga::Brezenheim::DrawLines(renderer, backVsStarClipResult.clipped.data(), backVsStarClipResult.clipped.size(), glm::vec3i(255, 0, 0), true);
 }
 
-void ClippingRenderJob::GenerateStar(const sf::Vector2f& center, float radius)
+void ClippingRenderJob::GenerateStar(const glm::vec2i& center, float radius)
 {
 	static const float PI = 3.1415f;
 	static const float PI_DOUBLE = 2.f * PI;
 
 	float sector = PI_DOUBLE / 5.f;
-	sf::Vector2f starPoints[5];
+	glm::vec2i starPoints[5];
 	for (int i = 0; i < 5; i++)
 	{
 		float phi = sector * float(i);
-		starPoints[i] = sf::Vector2f(sin(phi), -cos(phi)) * radius;
+		starPoints[i] = glm::vec2f(sin(phi), -cos(phi)) * radius;
 	}
 
-	m_starShape.append(sf::Vertex(starPoints[0], sf::Color::Black));
-	m_starShape.append(sf::Vertex(starPoints[2], sf::Color::Black));
-	m_starShape.append(sf::Vertex(starPoints[4], sf::Color::Black));
-	m_starShape.append(sf::Vertex(starPoints[1], sf::Color::Black));
-	m_starShape.append(sf::Vertex(starPoints[3], sf::Color::Black));
-	m_starShape.append(sf::Vertex(starPoints[0], sf::Color::Black));
-	m_starShape.setPrimitiveType(sf::LineStrip);
+	m_starShape.push_back(starPoints[0]);
+	m_starShape.push_back(starPoints[2]);
+	m_starShape.push_back(starPoints[4]);
+	m_starShape.push_back(starPoints[1]);
+	m_starShape.push_back(starPoints[3]);
+	m_starShape.push_back(starPoints[0]);
 }
-*/
+
+std::vector<glm::vec2i> ClippingRenderJob::TransformShape(const std::vector<glm::vec2i>& shape, const glm::mat3f& transform)
+{
+	std::vector<glm::vec2i> result;
+	auto transformer = [transform](const glm::vec2i& point)
+	{
+		return glm::vec2i(cga::Utils::TransformPoint(point, transform));
+	};
+	std::transform(shape.begin(), shape.end(), std::back_inserter(result), transformer);
+
+	return result;
+}
+
+void ClippingRenderJob::CleanupClipResults(Clipper::ClippingResult& result)
+{
+	result.clipped.erase(std::unique(result.clipped.begin(), result.clipped.end()), result.clipped.end());
+	result.remain.erase(std::unique(result.remain.begin(), result.remain.end()), result.remain.end());
+
+	for (const auto& line : result.clipped)
+	{
+		auto it = std::find(result.remain.begin(), result.remain.end(), line);
+		if (it != result.remain.end())
+		{
+			result.remain.erase(it, it + 1);
+		}
+	}
+
+	for (const auto& line : result.remain)
+	{
+		auto it = std::find(result.clipped.begin(), result.clipped.end(), line);
+		if (it != result.clipped.end())
+		{
+			result.clipped.erase(it, it + 1);
+		}
+	}
+}
+

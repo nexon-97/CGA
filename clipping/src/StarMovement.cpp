@@ -1,62 +1,61 @@
 #include "StarMovement.hpp"
-#include <SFML/Graphics.hpp>
 #include <vector>
+#include <core/Utils.hpp>
 
-StarMovement::StarMovement(sf::FloatRect boundingBox)
+StarMovement::StarMovement(const glm::recti& boundingBox)
 	: m_boundingBox(boundingBox)
 {
 	std::fill(std::begin(m_movementDirection), std::end(m_movementDirection), true);
-	m_starTransform.setPosition(250.f, 250.f);
+
+	m_position = glm::vec2i(250, 250);
+	m_rotation = 0.f;
 }
 
 void StarMovement::Update()
 {
 	if (m_isPaused) return;
 
-	auto position = m_starTransform.getPosition();
-	auto rotation = m_starTransform.getRotation();
-
-	sf::Vector2f delta(2.f, 2.f);
+	glm::vec2f delta(5.f, 8.f);
 	if (!m_movementDirection[0]) delta.x *= -1.f;
 	if (!m_movementDirection[1]) delta.y *= -1.f;
 
-	float rotDelta = 0.25f;
-	position += delta;
-	rotation += rotDelta;
+	float rotDelta = 0.05f;
+	m_position += delta;
+	m_rotation += rotDelta;
 
-	if (position.x > m_boundingBox.left + m_boundingBox.width && m_movementDirection[0])
+	if (m_position.x > m_boundingBox.bottomRight.x && m_movementDirection[0])
 	{
-		position.x = m_boundingBox.left + m_boundingBox.width;
+		m_position.x = m_boundingBox.bottomRight.x;
 		m_movementDirection[0] = false;
 	}
-	if (position.x < m_boundingBox.left && !m_movementDirection[0])
+	if (m_position.x < m_boundingBox.topLeft.x && !m_movementDirection[0])
 	{
-		position.x = m_boundingBox.left;
+		m_position.x = m_boundingBox.topLeft.x;
 		m_movementDirection[0] = true;
 	}
-	if (position.y > m_boundingBox.top + m_boundingBox.height && m_movementDirection[1])
+	if (m_position.y > m_boundingBox.bottomRight.y && m_movementDirection[1])
 	{
-		position.y = m_boundingBox.top + m_boundingBox.height;
+		m_position.y = m_boundingBox.bottomRight.y;
 		m_movementDirection[1] = false;
 	}
-	if (position.y < m_boundingBox.top && !m_movementDirection[1])
+	if (m_position.y < m_boundingBox.topLeft.y && !m_movementDirection[1])
 	{
-		position.y = m_boundingBox.top;
+		m_position.y = m_boundingBox.topLeft.y;
 		m_movementDirection[1] = true;
 	}
 
-	m_starTransform.setPosition(position);
-	m_starTransform.setRotation(rotation);
+	m_starTransform = cga::Utils::ConstructTransform(m_position, m_rotation);
 }
 
-const sf::Transformable& StarMovement::GetTransform() const
+const glm::mat3f& StarMovement::GetTransform() const
 {
 	return m_starTransform;
 }
 
-void StarMovement::SetPosition(const sf::Vector2f& pos)
+void StarMovement::SetPosition(const glm::vec2i& pos)
 {
-	m_starTransform.setPosition(pos);
+	m_position = pos;
+	m_starTransform = cga::Utils::ConstructTransform(m_position, m_rotation);
 }
 
 void StarMovement::Pause()

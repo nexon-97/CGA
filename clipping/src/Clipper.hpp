@@ -1,25 +1,22 @@
 #include "core/RenderJob.hpp"
 #include <vector>
-
-namespace sf
-{
-class Vertex;
-};
+#include <core/Defines.hpp>
 
 class Clipper
 {
 public:
 	Clipper() = default;
 
-	/*struct ClippingResult
+	struct ClippingResult
 	{
-		sf::VertexArray remain;
-		sf::VertexArray clipped;
+		std::vector<glm::linei> remain;
+		std::vector<glm::linei> clipped;
 	};
 
-	ClippingResult Clip(const sf::VertexArray& clipper, const sf::VertexArray& clippee, bool booleanMode, bool lineStrip = true);*/
+	ClippingResult Clip(const std::vector<glm::vec2i>& clipper, const std::vector<glm::vec2i>& clippee, bool booleanMode);
 
 private:
-/*	float Scalar(const sf::Vector2f& a, const sf::Vector2f& b);
-	sf::Vector2f FindNormal(const sf::Vector2f& a, const sf::Vector2f& b, const sf::Vector2f& c);*/
+	float Scalar(const glm::vec2f& a, const glm::vec2f& b);
+	glm::vec2f FindNormal(const glm::vec2f& a, const glm::vec2f& b, const glm::vec2f& c);
+	void AddLine(std::vector<glm::linei>& result, const glm::linei& line);
 };

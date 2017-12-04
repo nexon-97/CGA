@@ -1,18 +1,20 @@
 #include "RecursionRenderJob.hpp"
+#include <glm/gtx/compatibility.hpp>
+#include <core/Brezenheim.hpp>
 
-RecursionRenderJob::RecursionRenderJob(sf::Vector2f center, int recursionDepth, float rotationStep)
+RecursionRenderJob::RecursionRenderJob(const glm::vec2i& center, int recursionDepth, float rotationStep)
 	: m_recursionDepth(recursionDepth)
 {
 	static const float PI = 3.1415f;
 	static const float PI_DOUBLE = 2.f * PI;
 
 	// Add initial equal-sized triangle
-	sf::Vector2f currentTriangle[3] {
-		center + sf::Vector2f(0.f, -280.f),
-		center + sf::Vector2f(-242.5f, 140.f),
-		center + sf::Vector2f(242.5f, 140.f),
+	glm::vec2i currentTriangle[3] {
+		center + glm::vec2i(0.f, -240.f),
+		center + glm::vec2i(-242.5f, 210.f),
+		center + glm::vec2i(242.5f, 210.f),
 	};
-	sf::Vector2f nextTriangle[3];
+	glm::vec2i nextTriangle[3];
 
 	AddTriangle(currentTriangle);
 
@@ -25,29 +27,30 @@ RecursionRenderJob::RecursionRenderJob(sf::Vector2f center, int recursionDepth, 
 		int projectionSide = int(fProjectionSide);
 		float percentage = fmodf(fProjectionSide, 1.f);
 
-		nextTriangle[0] = Lerp(currentTriangle[0], currentTriangle[1], percentage);
-		nextTriangle[1] = Lerp(currentTriangle[1], currentTriangle[2], percentage);
-		nextTriangle[2] = Lerp(currentTriangle[2], currentTriangle[0], percentage);
+		nextTriangle[0] = glm::lerp(glm::vec2f(currentTriangle[0]), glm::vec2f(currentTriangle[1]), percentage);
+		nextTriangle[1] = glm::lerp(glm::vec2f(currentTriangle[1]), glm::vec2f(currentTriangle[2]), percentage);
+		nextTriangle[2] = glm::lerp(glm::vec2f(currentTriangle[2]), glm::vec2f(currentTriangle[0]), percentage);
 		memcpy_s(currentTriangle, sizeof(currentTriangle), nextTriangle, sizeof(nextTriangle));
 
 		AddTriangle(currentTriangle);
 	}
 }
 
-void RecursionRenderJob::AddTriangle(sf::Vector2f triangle[3])
+void RecursionRenderJob::AddTriangle(glm::vec2i triangle[3])
 {
-	m_lines.emplace_back(triangle[0], sf::Color::Black);
-	m_lines.emplace_back(triangle[1], sf::Color::Black);
-	m_lines.emplace_back(triangle[2], sf::Color::Black);
-	m_lines.emplace_back(triangle[0], sf::Color::Black);
+	m_points.push_back(triangle[0]);
+	m_points.push_back(triangle[1]);
+	m_points.push_back(triangle[2]);
+	m_points.push_back(triangle[0]);
 }
 
-sf::Vector2f RecursionRenderJob::Lerp(const sf::Vector2f& a, const sf::Vector2f& b, float x)
+void RecursionRenderJob::Render(SDL_Window* wnd, SDL_Renderer* renderer)
 {
-	return sf::Vector2f(a.x + (b.x - a.x) * x, a.y + (b.y - a.y) * x);
-}
+	for (int i = 0, sz = m_points.size() - 1; i < sz; i++)
+	{
+		const auto& from = m_points[i];
+		const auto& to = m_points[i + 1];
 
-void RecursionRenderJob::Render(sf::RenderWindow* wnd)
-{
-	wnd->draw(m_lines.data(), m_lines.size(), sf::LineStrip);
+		cga::Brezenheim::DrawLine(renderer, from, to, glm::vec3i(255, 255, 255), false);
+	}
 }

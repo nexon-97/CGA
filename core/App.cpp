@@ -66,10 +66,21 @@ void App::Run()
 			case SDL_QUIT:
 				quit = true;
 				break;
+			case SDL_MOUSEBUTTONDOWN:
+				InputManager::GetInstance().SetMouseDown(e.button.button, true);
+				break;
+			case SDL_MOUSEBUTTONUP:
+				InputManager::GetInstance().SetMouseDown(e.button.button, false);
+				break;
+			case SDL_MOUSEMOTION:
+				InputManager::GetInstance().SetMousePosition(glm::vec2i(e.motion.x, e.motion.y));
+				break;
 			}
 		}
 
-		SDL_FillRect(m_sdlScreenSurface, nullptr, SDL_MapRGB(m_sdlScreenSurface->format, 50, 50, 50));		
+		SDL_SetRenderDrawColor(m_renderer, 50, 50, 50, 255);
+		SDL_RenderClear(m_renderer);
+
 		Brezenheim::ResetDashFactor();
 
 		m_renderQueue->Render();

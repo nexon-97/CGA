@@ -11,22 +11,26 @@ InputManager& InputManager::GetInstance()
 
 bool InputManager::IsMouseDown(int idx) const
 {
-	return m_isMouseDown[idx];
+	if (idx < 4)
+		return m_isMouseDown[idx];
+
+	return false;
 }
 
 void InputManager::SetMouseDown(int idx, bool down)
 {
-	m_isMouseDown[idx] = down;
+	if (idx < 4)
+		m_isMouseDown[idx] = down;
 }
 
-/*void InputManager::SetMousePosition(const sf::Vector2f& position)
+void InputManager::SetMousePosition(const glm::vec2i& position)
 {
 	m_mousePos = position;
 }
 
-const sf::Vector2f& InputManager::GetMousePosition() const
+const glm::vec2i& InputManager::GetMousePosition() const
 {
 	return m_mousePos;
-}*/
+}
 
 }
