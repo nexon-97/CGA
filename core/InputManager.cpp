@@ -33,4 +33,15 @@ const glm::vec2i& InputManager::GetMousePosition() const
 	return m_mousePos;
 }
 
+void InputManager::SetKeyState(SDL_Scancode scancode, bool state)
+{
+	m_buttonStates[scancode] = state;
+}
+
+bool InputManager::GetKeyState(SDL_Scancode scancode) const
+{
+	auto it = m_buttonStates.find(scancode);
+	return it != m_buttonStates.end() ? it->second : false;
+}
+
 }

@@ -6,10 +6,17 @@
 namespace cga
 {
 
+App* App::s_app = nullptr;
+
+App* App::GetInstance()
+{
+	return s_app;
+}
+
 App::App(const char* wndTitle, bool antialiasing)
 	: m_wndTitle(wndTitle)
 {
-	
+	s_app = this;
 }
 
 App::~App()
@@ -74,6 +81,12 @@ void App::Run()
 				break;
 			case SDL_MOUSEMOTION:
 				InputManager::GetInstance().SetMousePosition(glm::vec2i(e.motion.x, e.motion.y));
+				break;
+			case SDL_KEYDOWN:
+				InputManager::GetInstance().SetKeyState(e.key.keysym.scancode, true);
+				break;
+			case SDL_KEYUP:
+				InputManager::GetInstance().SetKeyState(e.key.keysym.scancode, false);
 				break;
 			}
 		}

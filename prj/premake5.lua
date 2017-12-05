@@ -32,6 +32,7 @@ workspace "CGA"
 include "../archimedean_spiral/prj/premake5"
 include "../triangle_recursion/prj/premake5"
 include "../clipping/prj/premake5"
+include "../projection/prj/premake5"
 
 project "Core"
 	kind "StaticLib"

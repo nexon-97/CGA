@@ -1,4 +1,6 @@
 #include "Brezenheim.hpp"
+#include "Utils.hpp"
+#include "App.hpp"
 
 #include <SDL.h>
 #include <utility>
@@ -98,6 +100,34 @@ void Brezenheim::DrawLines(SDL_Renderer* renderer, glm::linei* lines, int count,
 	for (int i = 0; i < count; i++)
 	{
 		DrawLine(renderer, lines[i].topLeft, lines[i].bottomRight, color, dashed);
+	}
+}
+
+void Brezenheim::DrawVertexBuffer(SDL_Renderer* renderer, VertexBuffer* buffer, const glm::mat4f& transform)
+{
+	const auto& points = buffer->GetPoints();
+	const auto& indices = buffer->GetIndices();
+
+	glm::vec2i wndSize;
+	SDL_GetWindowSize(App::GetInstance()->GetWindow(), &wndSize.x, &wndSize.y);
+
+	for (int i = 0; i < indices.size(); i += 3)
+	{
+		auto p1 = points[indices[i]];
+		auto p2 = points[indices[i + 1]];
+		auto p3 = points[indices[i + 2]];
+
+		p1 = Utils::TransformPoint(p1, transform);
+		p2 = Utils::TransformPoint(p2, transform);
+		p3 = Utils::TransformPoint(p3, transform);
+
+		glm::vec2i screenP1 = glm::vec2i(wndSize.x * (p1.x + 1.f) / 2.f, wndSize.y * (p1.y + 1.f) / 2.f);
+		glm::vec2i screenP2 = glm::vec2i(wndSize.x * (p2.x + 1.f) / 2.f, wndSize.y * (p2.y + 1.f) / 2.f);
+		glm::vec2i screenP3 = glm::vec2i(wndSize.x * (p3.x + 1.f) / 2.f, wndSize.y * (p3.y + 1.f) / 2.f);
+
+		DrawLine(renderer, screenP1, screenP2, glm::vec3i(255, 255, 255), false);
+		DrawLine(renderer, screenP2, screenP3, glm::vec3i(255, 255, 255), false);
+		DrawLine(renderer, screenP3, screenP1, glm::vec3i(255, 255, 255), false);
 	}
 }
 

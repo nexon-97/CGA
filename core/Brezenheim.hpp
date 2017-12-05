@@ -1,5 +1,6 @@
 #pragma once
 #include "Defines.hpp"
+#include "VertexBuffer.hpp"
 
 struct SDL_Renderer;
 
@@ -14,6 +15,8 @@ public:
 
 	static void DrawPolygon(SDL_Renderer* renderer, glm::vec2i* start, int count, const glm::vec3i& color, bool dashed);
 	static void DrawLines(SDL_Renderer* renderer, glm::linei* start, int count, const glm::vec3i& color, bool dashed);
+
+	static void DrawVertexBuffer(SDL_Renderer* renderer, VertexBuffer* buffer, const glm::mat4f& transform);
 
 private:
 	static int s_dashFactor;

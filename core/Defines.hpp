@@ -45,5 +45,6 @@ using linef = rectf;
 using linei = recti;
 
 using mat3f = glm::tmat3x3<float>;
+using mat4f = glm::tmat4x4<float>;
 
 }

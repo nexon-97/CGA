@@ -9,6 +9,8 @@ namespace cga
 class App
 {
 public:
+	static App* GetInstance();
+
 	App(const char* wndTitle, bool antialiasing = true);
 	~App();
 
@@ -20,6 +22,8 @@ public:
 	cga::RenderQueue* GetRenderQueue() const;
 
 private:
+	static App* s_app;
+
 	std::unique_ptr<cga::RenderQueue> m_renderQueue;
 
 	const char* m_wndTitle = nullptr;
