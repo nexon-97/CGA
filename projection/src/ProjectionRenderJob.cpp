@@ -3,100 +3,109 @@
 #include <core/Utils.hpp>
 #include <core/InputManager.hpp>
 #include <Windows.h>
+#include <core/App.hpp>
 
 ProjectionRenderJob::ProjectionRenderJob(const glm::vec2i& center)
 {
-	glm::vec3f points[] =
+	// Construct geometry
+	int n = 6;
+	float l = 1.f;
+	float h = l * 0.25f;
+	const glm::vec3f up = glm::vec3f(0.f, 0.f, 1.f);
+
+	int k = 0;
+	float heightTotal = h * n;
+
+	cga::math::Matrix transform;
+	transform.SetIdentity();
+	transform.SetTranslation(glm::vec3f(0.f, 0.f, -heightTotal * 0.5f));
+
+	for (int i = 0; i < n; i++)
 	{
-		glm::vec3f(-1.f, -1.f, 0.f),
-		glm::vec3f(-1.f, 1.f, 0.f),
-		glm::vec3f(1.f, 1.f, 0.f),
-		glm::vec3f(1.f, -1.f, 0.f),
-		glm::vec3f(-1.f, -1.f, 1.f),
-		glm::vec3f(-1.f, 1.f, 1.f),
-		glm::vec3f(1.f, 1.f, 1.f),
-		glm::vec3f(1.f, -1.f, 1.f),
-	};
+		glm::vec3f points[] =
+		{
+			glm::vec3f(-l / 2.f, -h / 2.f, -h / 2.f),
+			glm::vec3f(-l / 2.f, +h / 2.f, -h / 2.f),
+			glm::vec3f(+l / 2.f, +h / 2.f, -h / 2.f),
+			glm::vec3f(+l / 2.f, -h / 2.f, -h / 2.f),
+			glm::vec3f(-l / 2.f, -h / 2.f, +h / 2.f),
+			glm::vec3f(-l / 2.f, +h / 2.f, +h / 2.f),
+			glm::vec3f(+l / 2.f, +h / 2.f, +h / 2.f),
+			glm::vec3f(+l / 2.f, -h / 2.f, +h / 2.f),
+		};
 
-	int indices[] =
-	{
-		0, 1, 2,
-		2, 3, 0,
-		0, 4, 7,
-		7, 3, 0,
-		1, 4, 0,
-		1, 5, 4,
-		1, 6, 5,
-		1, 2, 6,
-		3, 7, 6,
-		3, 6, 2,
-		4, 5, 6,
-		4, 6, 7,
-	};
+		auto transformTransposed = transform.Transpose();
+		for (int j = 0; j < 8; j++)
+		{
+			points[j] = cga::Utils::TransformPoint(points[j], transformTransposed);
+		}
 
-	m_vb.LoadPoints(points, sizeof(points) / sizeof(glm::vec3f));
-	m_vb.LoadIndices(indices, sizeof(indices) / sizeof(int));
+		int indices[] =
+		{
+			k + 2, k + 1, k + 0,
+			k + 0, k + 3, k + 2,
+			k + 0, k + 4, k + 7,
+			k + 7, k + 3, k + 0,
+			k + 1, k + 4, k + 0,
+			k + 1, k + 5, k + 4,
+			k + 1, k + 6, k + 5,
+			k + 1, k + 2, k + 6,
+			k + 3, k + 7, k + 6,
+			k + 3, k + 6, k + 2,
+			k + 4, k + 5, k + 6,
+			k + 4, k + 6, k + 7,
+		};
 
-	m_cameraPosition = glm::vec3f(0.f, -5.f, 3.f);
-	m_cameraTarget = glm::vec3f(0.f, 0.f, 0.f);
-	m_worldUp = glm::vec3f(0.f, 0.f, 1.f);
-	UpdateCameraState();
+		m_vb.LoadPoints(points, sizeof(points) / sizeof(glm::vec3f));
+		m_vb.LoadIndices(indices, sizeof(indices) / sizeof(int));
+		k += 8;
 
-	m_projection = cga::Utils::ConstructOrthoProjection(10.f, 10.f, 0.1f, 10.f);
-}
+		auto rotation = cga::Utils::QuatFromAxisAngle(up, glm::pi<float>() * 0.5f);
+		glm::vec3f offset = cga::Utils::Rotate(rotation, glm::vec3f(-1.5f * h, -1.5f * h, h));
+		auto newTransform = cga::Utils::ConstructTransform(offset, rotation, glm::vec3f(1.f));
+		transform = transform * newTransform;
+	}
 
-void ProjectionRenderJob::UpdateCameraState()
-{
-	m_cameraMatrix = cga::Utils::ConstructLookAtMatrix(m_cameraPosition, m_cameraTarget, m_worldUp);
+	// Define fixed axis (given by task)
+	m_fixedAxisStart = m_vb.GetPoints()[5];
+	m_fixedAxisEnd = m_vb.GetPoints()[8 * (n - 1) + 5];
 
-	//std::string output = "Camera position: " + std::to_string(m_cameraPosition.x) + "; " + std::to_string(m_cameraPosition.y) + "; " + std::to_string(m_cameraPosition.z) + "\n";
-	//OutputDebugStringA(output.c_str());
+	// Create projection matrix
+	auto wnd = cga::App::GetInstance()->GetWindow();
+	glm::vec2i size;
+	SDL_GetWindowSize(wnd, &size.x, &size.y);
+
+	float aspect = float(size.x) / float(size.y);
+	float fov = glm::radians(60.f);
+	m_projection = cga::Utils::ConstructPerspectiveProjection(fov, aspect, 0.25f, 100.f);
+
+	// Create fixed camera matrix
+	float offsetScalar = 100.f;
+	float projectionAngle = 30.f;
+	const glm::vec3f cameraTargetOffset(offsetScalar * glm::tan(glm::radians(projectionAngle)), -offsetScalar, -offsetScalar * glm::tan(glm::radians(projectionAngle)));
+	m_cameraFirst = cga::Utils::ConstructLookAtMatrix(cameraTargetOffset, glm::vec3f(0.f), up);
 }
 
 void ProjectionRenderJob::UpdateInput()
 {
+	const glm::vec3f right = glm::vec3f(1.f, 0.f, 0.f);
+	const glm::vec3f up = glm::vec3f(0.f, 0.f, 1.f);
+
 	if (cga::InputManager::GetInstance().GetKeyState(SDL_SCANCODE_LEFT))
 	{
-		m_cameraPosition -= glm::vec3f(0.1f, 0.f, 0.f);
-		UpdateCameraState();
+		m_fixedAxisRotationAngle -= 0.05f;
 	}
-	else if (cga::InputManager::GetInstance().GetKeyState(SDL_SCANCODE_RIGHT))
+	if (cga::InputManager::GetInstance().GetKeyState(SDL_SCANCODE_RIGHT))
 	{
-		m_cameraPosition += glm::vec3f(0.1f, 0.f, 0.f);
-		UpdateCameraState();
+		m_fixedAxisRotationAngle += 0.05f;
 	}
-	else if (cga::InputManager::GetInstance().GetKeyState(SDL_SCANCODE_UP))
+	if (cga::InputManager::GetInstance().GetKeyState(SDL_SCANCODE_Q))
 	{
-		m_cameraPosition += glm::vec3f(0.f, 0.f, 0.1f);
-		UpdateCameraState();
+		m_worldScale = glm::clamp(m_worldScale - 0.01f, 0.001f, 100.f);
 	}
-	else if (cga::InputManager::GetInstance().GetKeyState(SDL_SCANCODE_DOWN))
+	if (cga::InputManager::GetInstance().GetKeyState(SDL_SCANCODE_E))
 	{
-		m_cameraPosition -= glm::vec3f(0.f, 0.f, 0.1f);
-		UpdateCameraState();
-	}
-	else if (cga::InputManager::GetInstance().GetKeyState(SDL_SCANCODE_W))
-	{
-		m_cameraPosition += glm::vec3f(0.f, 0.1f, 0.f);
-		UpdateCameraState();
-	}
-	else if (cga::InputManager::GetInstance().GetKeyState(SDL_SCANCODE_S))
-	{
-		m_cameraPosition -= glm::vec3f(0.f, 0.1f, 0.f);
-		UpdateCameraState();
-	}
-	else if (cga::InputManager::GetInstance().GetKeyState(SDL_SCANCODE_DOWN))
-	{
-		m_cameraPosition -= glm::vec3f(0.f, 0.f, 0.1f);
-		UpdateCameraState();
-	}
-	else if (cga::InputManager::GetInstance().GetKeyState(SDL_SCANCODE_Q))
-	{
-		m_worldScale -= 0.1f;
-	}
-	else if (cga::InputManager::GetInstance().GetKeyState(SDL_SCANCODE_E))
-	{
-		m_worldScale += 0.1f;
+		m_worldScale = glm::clamp(m_worldScale + 0.01f, 0.001f, 100.f);
 	}
 }
 
@@ -104,12 +113,21 @@ void ProjectionRenderJob::Render(SDL_Window* wnd, SDL_Renderer* renderer)
 {
 	UpdateInput();
 
-	glm::vec3f pos(0.f, 0.f, 0.f);
-	glm::quat rot(1.f, 0.f, 0.f, 0.f);
+	auto fixedAxisRotation = cga::Utils::ConstructAxisAngleRotation(m_fixedAxisStart, m_fixedAxisEnd, m_fixedAxisRotationAngle);
 
-	auto worldTransform = cga::Utils::ConstructTransform(pos, rot, glm::vec3f(m_worldScale));
+	auto worldTransform = cga::Utils::ConstructTransform(glm::vec3f(0.f), glm::quat(), glm::vec3f(m_worldScale));
+	auto mvpMatrix = fixedAxisRotation * worldTransform * m_cameraFirst * m_projection;
 
-	auto mvpMatrix = worldTransform * m_cameraMatrix * m_projection;
-	mvpMatrix = glm::transpose(mvpMatrix);
 	cga::Brezenheim::DrawVertexBuffer(renderer, &m_vb, mvpMatrix);
+
+	// Draw fixed axis
+	auto transposed = mvpMatrix.Transpose();
+	glm::vec2i size;
+	SDL_GetWindowSize(wnd, &size.x, &size.y);
+	auto fixedAxisStartProjected = cga::Utils::ProjectPoint(cga::Utils::TransformPoint(m_fixedAxisStart, transposed), size);
+	auto fixedAxisEndProjected = cga::Utils::ProjectPoint(cga::Utils::TransformPoint(m_fixedAxisEnd, transposed), size);
+
+	cga::Brezenheim::DrawLine(renderer, fixedAxisStartProjected, fixedAxisEndProjected, glm::vec3i(0, 255, 0), true);
+	cga::Brezenheim::DrawQuad(renderer, fixedAxisStartProjected, 5, glm::vec3i(0, 255, 0));
+	cga::Brezenheim::DrawQuad(renderer, fixedAxisEndProjected, 5, glm::vec3i(0, 255, 0));
 }

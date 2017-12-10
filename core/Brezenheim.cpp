@@ -4,6 +4,7 @@
 
 #include <SDL.h>
 #include <utility>
+#include <algorithm>
 
 namespace cga
 {
@@ -87,6 +88,17 @@ void Brezenheim::DrawLine(SDL_Renderer* renderer, glm::vec2i from, glm::vec2i to
 	}
 }
 
+void Brezenheim::DrawQuad(SDL_Renderer* renderer, const glm::vec2i& pos, int size, const glm::vec3i& color)
+{
+	for (int i = - size / 2; i <= size / 2; i++)
+	{
+		for (int j = -size / 2; j <= size / 2; j++)
+		{
+			SDL_RenderDrawPoint(renderer, pos.x + i, pos.y + j);
+		}
+	}
+}
+
 void Brezenheim::DrawPolygon(SDL_Renderer* renderer, glm::vec2i* start, int count, const glm::vec3i& color, bool dashed)
 {
 	for (int i = 0, sz = count - 1; i < sz; i++)
@@ -103,7 +115,7 @@ void Brezenheim::DrawLines(SDL_Renderer* renderer, glm::linei* lines, int count,
 	}
 }
 
-void Brezenheim::DrawVertexBuffer(SDL_Renderer* renderer, VertexBuffer* buffer, const glm::mat4f& transform)
+void Brezenheim::DrawVertexBuffer(SDL_Renderer* renderer, VertexBuffer* buffer, math::Matrix& transform)
 {
 	const auto& points = buffer->GetPoints();
 	const auto& indices = buffer->GetIndices();
@@ -111,24 +123,90 @@ void Brezenheim::DrawVertexBuffer(SDL_Renderer* renderer, VertexBuffer* buffer, 
 	glm::vec2i wndSize;
 	SDL_GetWindowSize(App::GetInstance()->GetWindow(), &wndSize.x, &wndSize.y);
 
-	for (int i = 0; i < indices.size(); i += 3)
+	auto transposed = transform.Transpose();
+
+	struct LineInfo
 	{
-		auto p1 = points[indices[i]];
-		auto p2 = points[indices[i + 1]];
-		auto p3 = points[indices[i + 2]];
+		glm::vec2i src;
+		glm::vec2i dest;
+		bool visible;
+	};
 
-		p1 = Utils::TransformPoint(p1, transform);
-		p2 = Utils::TransformPoint(p2, transform);
-		p3 = Utils::TransformPoint(p3, transform);
+	std::vector<LineInfo> rasterizedLines;
+	auto addRasterizedLine = [&rasterizedLines](const LineInfo& newLine)
+	{
+		auto it = std::find_if(rasterizedLines.begin(), rasterizedLines.end(),
+			[newLine](const LineInfo& info) { 
+				return (info.src == newLine.src && info.dest == newLine.dest) || (info.src == newLine.dest && info.dest == newLine.src); 
+			});
 
-		glm::vec2i screenP1 = glm::vec2i(wndSize.x * (p1.x + 1.f) / 2.f, wndSize.y * (p1.y + 1.f) / 2.f);
-		glm::vec2i screenP2 = glm::vec2i(wndSize.x * (p2.x + 1.f) / 2.f, wndSize.y * (p2.y + 1.f) / 2.f);
-		glm::vec2i screenP3 = glm::vec2i(wndSize.x * (p3.x + 1.f) / 2.f, wndSize.y * (p3.y + 1.f) / 2.f);
+		if (it == rasterizedLines.end())
+		{
+			rasterizedLines.push_back(newLine);
+		}
+		else
+		{
+			// Leave stored line visible, if there is a visibility collision
+			if (it->visible != newLine.visible)
+			{
+				it->visible = true;
+			}
+		}
+	};
 
-		DrawLine(renderer, screenP1, screenP2, glm::vec3i(255, 255, 255), false);
-		DrawLine(renderer, screenP2, screenP3, glm::vec3i(255, 255, 255), false);
-		DrawLine(renderer, screenP3, screenP1, glm::vec3i(255, 255, 255), false);
+	for (std::size_t i = 0; i < indices.size(); i += 3)
+	{
+		Face face;
+		for (int j = 0; j < 3; j++)
+		{
+			auto p = points[indices[i + j]];
+			face.points[j] = Utils::TransformPoint(p, transposed);
+		}
+
+		bool isInFrustrum = PerformFrustumCullingTest(face);
+		if (!isInFrustrum) continue;
+
+		auto edge1 = face.points[1] - face.points[0];
+		auto edge2 = face.points[2] - face.points[1];
+		auto crossing = glm::cross(glm::vec3f(edge1.x, edge1.y, 0.f), glm::vec3f(edge2.x, edge2.y, 0.f));
+		bool winding = crossing.z > 0.f;
+
+		// Convert to screen coordinates
+		glm::vec2i screenPoints[3];
+		for (int j = 0; j < 3; j++)
+		{
+			screenPoints[j] = Utils::ProjectPoint(face.points[j], wndSize);
+		}
+			
+		addRasterizedLine({screenPoints[0], screenPoints[1], winding});
+		addRasterizedLine({screenPoints[1], screenPoints[2], winding});
+		addRasterizedLine({screenPoints[2], screenPoints[0], winding});
 	}
+
+	// Draw rasterized lines
+	for (const auto& line : rasterizedLines)
+	{
+		bool dashed = !line.visible;
+		glm::vec3i color = line.visible ? glm::vec3i(255, 255, 255) : glm::vec3i(255, 0, 0);
+		DrawLine(renderer, line.src, line.dest, color, dashed);
+	}
+}
+
+bool Brezenheim::PerformFrustumCullingTest(const Face& face)
+{
+	for (int j = 0; j < 3; j++)
+	{
+		auto& p = face.points[j];
+		if ((p.x < -1.f || p.x > 1.f) && (p.y < -1.f || p.y > 1.f) && (p.z < -1.f || p.z > 1.f))
+			return false;
+	}
+
+	return true;
+}
+
+bool Brezenheim::PerformDepthTest(const glm::vec3f& point)
+{
+	return true;
 }
 
 }

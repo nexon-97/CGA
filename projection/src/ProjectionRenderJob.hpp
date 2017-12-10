@@ -1,6 +1,7 @@
 #include "core/RenderJob.hpp"
 #include <vector>
 #include "core/VertexBuffer.hpp"
+#include "core/Math.h"
 
 class ProjectionRenderJob : public cga::RenderJob
 {
@@ -16,12 +17,18 @@ private:
 	std::vector<glm::vec2i> m_points;
 	std::vector<glm::vec2i> m_pointsReverse;
 	cga::VertexBuffer m_vb;
-	float m_cameraAngle = 0.f;
-	float m_worldScale = 1.f;
-	glm::mat4f m_cameraMatrix;
-	glm::mat4f m_projection;
 
+	float m_worldScale = 1.f;
 	glm::vec3f m_cameraPosition;
-	glm::vec3f m_cameraTarget;
+	float m_cameraPitch = 0.f;
+	float m_cameraYaw = 0.f;
+	float m_worldRotation = 0.f;
+	cga::math::Matrix m_cameraMatrix;
+	cga::math::Matrix m_projection;
 	glm::vec3f m_worldUp;
+
+	cga::math::Matrix m_cameraFirst;
+	float m_fixedAxisRotationAngle = 0.f;
+	glm::vec3f m_fixedAxisStart;
+	glm::vec3f m_fixedAxisEnd;
 };
