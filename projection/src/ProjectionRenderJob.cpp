@@ -8,7 +8,7 @@
 ProjectionRenderJob::ProjectionRenderJob(const glm::vec2i& center)
 {
 	// Construct geometry
-	int n = 6;
+	int n = 4;
 	float l = 1.f;
 	float h = l * 0.25f;
 	const glm::vec3f up = glm::vec3f(0.f, 0.f, 1.f);
@@ -107,27 +107,73 @@ void ProjectionRenderJob::UpdateInput()
 	{
 		m_worldScale = glm::clamp(m_worldScale + 0.01f, 0.001f, 100.f);
 	}
+
+	if (cga::InputManager::GetInstance().GetKeyState(SDL_SCANCODE_1))
+	{
+		m_renderMode = RenderMode::Wireframe;
+	}
+	else if (cga::InputManager::GetInstance().GetKeyState(SDL_SCANCODE_2))
+	{
+		m_renderMode = RenderMode::Solid;
+	}
+	else if (cga::InputManager::GetInstance().GetKeyState(SDL_SCANCODE_3))
+	{
+		m_renderMode = RenderMode::DepthBuffer;
+	}
 }
 
 void ProjectionRenderJob::Render(SDL_Window* wnd, SDL_Renderer* renderer)
 {
 	UpdateInput();
 
+	glm::vec2i size;
+	SDL_GetWindowSize(wnd, &size.x, &size.y);
+
 	auto fixedAxisRotation = cga::Utils::ConstructAxisAngleRotation(m_fixedAxisStart, m_fixedAxisEnd, m_fixedAxisRotationAngle);
 
 	auto worldTransform = cga::Utils::ConstructTransform(glm::vec3f(0.f), glm::quat(), glm::vec3f(m_worldScale));
 	auto mvpMatrix = fixedAxisRotation * worldTransform * m_cameraFirst * m_projection;
 
-	cga::Brezenheim::DrawVertexBuffer(renderer, &m_vb, mvpMatrix);
+	if (m_renderMode == RenderMode::Wireframe)
+	{
+		cga::Brezenheim::DrawVertexBuffer(renderer, &m_vb, mvpMatrix, false);
+	}
+	else if (m_renderMode == RenderMode::Solid)
+	{
+		cga::Brezenheim::DrawVertexBuffer(renderer, &m_vb, mvpMatrix, true);
+	}
+
+	if (m_renderMode == RenderMode::DepthBuffer)
+	{
+		cga::Brezenheim::DrawVertexBuffer(renderer, &m_vb, mvpMatrix, true);
+		SDL_RenderClear(renderer);
+
+		auto zbufferContent = cga::App::GetInstance()->GetZBufferContent();
+		auto zbuffer = cga::App::GetInstance()->GetZBuffer();
+
+		SDL_SetRenderTarget(renderer, zbuffer);
+
+		int sz = size.x * size.y;
+		for (int i = 0; i < size.y; i++)
+		{
+			for (int j = 0; j < size.x; j++)
+			{
+				int color = int(zbufferContent[i * size.y + j] * 255.f);
+				SDL_SetRenderDrawColor(renderer, color, color, color, 255);
+				SDL_RenderDrawPoint(renderer, j, i);
+			}
+		}
+
+		SDL_SetRenderTarget(renderer, nullptr);
+		SDL_RenderCopy(renderer, zbuffer, nullptr, nullptr);
+	}
 
 	// Draw fixed axis
 	auto transposed = mvpMatrix.Transpose();
-	glm::vec2i size;
-	SDL_GetWindowSize(wnd, &size.x, &size.y);
 	auto fixedAxisStartProjected = cga::Utils::ProjectPoint(cga::Utils::TransformPoint(m_fixedAxisStart, transposed), size);
 	auto fixedAxisEndProjected = cga::Utils::ProjectPoint(cga::Utils::TransformPoint(m_fixedAxisEnd, transposed), size);
 
-	cga::Brezenheim::DrawLine(renderer, fixedAxisStartProjected, fixedAxisEndProjected, glm::vec3i(0, 255, 0), true);
-	cga::Brezenheim::DrawQuad(renderer, fixedAxisStartProjected, 5, glm::vec3i(0, 255, 0));
-	cga::Brezenheim::DrawQuad(renderer, fixedAxisEndProjected, 5, glm::vec3i(0, 255, 0));
+	cga::Brezenheim::DrawLine(renderer, fixedAxisStartProjected, fixedAxisEndProjected, glm::vec3i(0, 255, 0), true, false, nullptr);
+	cga::Brezenheim::DrawFilledQuad(renderer, fixedAxisStartProjected, 5, glm::vec3i(0, 255, 0));
+	cga::Brezenheim::DrawFilledQuad(renderer, fixedAxisEndProjected, 5, glm::vec3i(0, 255, 0));
 }

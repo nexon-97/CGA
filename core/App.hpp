@@ -21,6 +21,11 @@ public:
 	SDL_Renderer* GetRenderer() const;
 	cga::RenderQueue* GetRenderQueue() const;
 
+	void EnableZBuffer();
+	void ClearZBuffer();
+	float* GetZBufferContent() const { return m_zbufferContent; }
+	SDL_Texture* GetZBuffer() const { return m_zbufferTex; }
+
 private:
 	static App* s_app;
 
@@ -29,7 +34,8 @@ private:
 	const char* m_wndTitle = nullptr;
 	SDL_Window* m_sdlWindow = nullptr;
 	SDL_Renderer* m_renderer = nullptr;
-	SDL_Surface* m_sdlScreenSurface = nullptr;
+	SDL_Texture* m_zbufferTex = nullptr;
+	float* m_zbufferContent = nullptr;
 	bool m_sdlInitialized = false;
 };
 

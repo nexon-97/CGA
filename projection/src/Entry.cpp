@@ -12,6 +12,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	if (!app.Init())
 		return 1;
 
+	app.EnableZBuffer();
 	auto wnd = app.GetWindow();
 	auto renderQueue = app.GetRenderQueue();
 

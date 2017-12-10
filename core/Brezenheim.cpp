@@ -16,20 +16,46 @@ void Brezenheim::ResetDashFactor()
 	s_dashFactor = 0;
 }
 
-void Brezenheim::DrawLine(SDL_Renderer* renderer, glm::vec2i from, glm::vec2i to, const glm::vec3i& color, bool dashed)
+void Brezenheim::DrawLine(SDL_Renderer* renderer, glm::vec2i from, glm::vec2i to, const glm::vec3i& color, bool dashed, bool useZbuffer, float* depths)
 {
-	auto dashedDraw = [renderer, dashed](const glm::vec2i& point, int& dashFactor)
+	auto zbuffer = App::GetInstance()->GetZBufferContent();
+	auto wnd = App::GetInstance()->GetWindow();
+	glm::vec2i wndSize;
+	SDL_GetWindowSize(wnd, &wndSize.x, &wndSize.y);
+
+	auto dashedDraw = [renderer, dashed, useZbuffer, zbuffer, wndSize](const glm::vec2i& point, int& dashFactor, float depth)
 	{
+		if (point.x < 0 || point.y < 0 || point.x >= wndSize.x || point.y >= wndSize.y) return;
+
 		if (!dashed || (dashFactor / 10) % 2 == 1)
 		{
-			SDL_RenderDrawPoint(renderer, point.x, point.y);
+			if (!useZbuffer)
+			{
+				SDL_RenderDrawPoint(renderer, point.x, point.y);
+			}
+			else 
+			{
+				int zbufferIdx = wndSize.y * point.y + point.x;
+				if (zbuffer[zbufferIdx] > depth)
+				{
+					zbuffer[zbufferIdx] = depth;
+					SDL_RenderDrawPoint(renderer, point.x, point.y);
+				}
+			}
 		}
 
 		dashFactor++;
 	};
 
 	SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, SDL_ALPHA_OPAQUE);
-	dashedDraw(from, s_dashFactor);
+	if (useZbuffer)
+	{
+		dashedDraw(from, s_dashFactor, depths[0]);
+	}
+	else
+	{
+		dashedDraw(from, s_dashFactor, 0.f);
+	}
 
 	glm::vec2i delta(from.x - to.x, to.y - from.y);
 
@@ -38,7 +64,8 @@ void Brezenheim::DrawLine(SDL_Renderer* renderer, glm::vec2i from, glm::vec2i to
 		int sign = delta.x < 0 ? -1 : 1;
 		for (int i = from.x; i != to.x; i -= sign)
 		{
-			dashedDraw(glm::vec2i(i, from.y), s_dashFactor);
+			float depth = useZbuffer ? glm::lerp(depths[0], depths[1], float(i - from.x) / float(to.x - from.x)) : 0.f;
+			dashedDraw(glm::vec2i(i, from.y), s_dashFactor, depth);
 		}
 	}
 	else if (delta.x == 0)
@@ -46,7 +73,8 @@ void Brezenheim::DrawLine(SDL_Renderer* renderer, glm::vec2i from, glm::vec2i to
 		int sign = delta.y < 0 ? -1 : 1;
 		for (int i = from.y; i != to.y; i += sign)
 		{
-			dashedDraw(glm::vec2i(from.x, i), s_dashFactor);
+			float depth = useZbuffer ? glm::lerp(depths[0], depths[1], float(i - from.y) / float(to.y - from.y)) : 0.f;
+			dashedDraw(glm::vec2i(from.x, i), s_dashFactor, depth);
 		}
 	}
 	else
@@ -68,7 +96,8 @@ void Brezenheim::DrawLine(SDL_Renderer* renderer, glm::vec2i from, glm::vec2i to
 
 				current.x -= sign.x;
 
-				dashedDraw(current, s_dashFactor);
+				float depth = useZbuffer ? glm::lerp(depths[0], depths[1], float(current.y - from.y) / float(delta.x)) : 0.f;
+				dashedDraw(current, s_dashFactor, depth);
 			} while (current.x != to.x || current.y != to.y);
 		}
 		else
@@ -82,13 +111,85 @@ void Brezenheim::DrawLine(SDL_Renderer* renderer, glm::vec2i from, glm::vec2i to
 
 				current.y += sign.y;
 
-				dashedDraw(current, s_dashFactor);
+				float depth = useZbuffer ? glm::lerp(depths[0], depths[1], float(current.y - from.y) / float(delta.y)) : 0.f;
+				dashedDraw(current, s_dashFactor, depth);
 			} while (current.x != to.x || current.y != to.y);
 		}
 	}
 }
 
-void Brezenheim::DrawQuad(SDL_Renderer* renderer, const glm::vec2i& pos, int size, const glm::vec3i& color)
+std::vector<glm::vec2i> Brezenheim::ConstructLine(glm::vec2i from, glm::vec2i to)
+{
+	int lastY = from.y;
+	std::vector<glm::vec2i> result = { from };
+
+	glm::vec2i delta(from.x - to.x, to.y - from.y);
+	if (delta.y == 0)
+	{
+		int sign = delta.x < 0 ? -1 : 1;
+		for (int i = from.x; i != to.x; i -= sign)
+		{
+			result.push_back(glm::vec2i(i, from.y));
+		}
+	}
+	else if (delta.x == 0)
+	{
+		int sign = delta.y < 0 ? -1 : 1;
+		for (int i = from.y; i != to.y; i += sign)
+		{
+			result.push_back(glm::vec2i(from.x, i));
+		}
+	}
+	else
+	{
+		int f = 0;
+		glm::vec2i sign(delta.x < 0 ? -1 : 1, delta.y < 0 ? -1 : 1);
+		glm::vec2i signedDelta = delta * sign;
+		glm::vec2i current = from;
+
+		if (abs(delta.y) <= abs(delta.x))
+		{
+			do {
+				f += signedDelta.y;
+				if (f > 0)
+				{
+					f -= signedDelta.x;
+					current.y += sign.y;
+				}
+
+				current.x -= sign.x;
+
+				if (lastY != current.y)
+				{
+					result.push_back(current);
+					lastY = current.y;
+				}
+			} while (current.x != to.x || current.y != to.y);
+		}
+		else
+		{
+			do {
+				f += signedDelta.x;
+				if (f > 0) {
+					f -= signedDelta.y;
+					current.x -= sign.x;
+				}
+
+				current.y += sign.y;
+
+				if (lastY != current.y)
+				{
+					result.push_back(current);
+					lastY = current.y;
+				}
+			} while (current.x != to.x || current.y != to.y);
+		}
+	}
+
+	return result;
+}
+
+void Brezenheim::DrawFilledQuad(SDL_Renderer* renderer, const glm::vec2i& pos, int size, const glm::vec3i& color)
 {
 	for (int i = - size / 2; i <= size / 2; i++)
 	{
@@ -103,7 +204,7 @@ void Brezenheim::DrawPolygon(SDL_Renderer* renderer, glm::vec2i* start, int coun
 {
 	for (int i = 0, sz = count - 1; i < sz; i++)
 	{
-		DrawLine(renderer, start[i], start[i + 1], color, dashed);
+		DrawLine(renderer, start[i], start[i + 1], color, dashed, false, nullptr);
 	}
 }
 
@@ -111,11 +212,44 @@ void Brezenheim::DrawLines(SDL_Renderer* renderer, glm::linei* lines, int count,
 {
 	for (int i = 0; i < count; i++)
 	{
-		DrawLine(renderer, lines[i].topLeft, lines[i].bottomRight, color, dashed);
+		DrawLine(renderer, lines[i].topLeft, lines[i].bottomRight, color, dashed, false, nullptr);
 	}
 }
 
-void Brezenheim::DrawVertexBuffer(SDL_Renderer* renderer, VertexBuffer* buffer, math::Matrix& transform)
+void Brezenheim::DrawSolidFace(SDL_Renderer* renderer, const glm::vec2i& p1, const glm::vec2i& p2, const glm::vec2i& p3, float* depths)
+{
+	// Sort vertices by y
+	glm::vec2i const* vertexes[3] = { &p1, &p2, &p3 };
+
+	if (vertexes[0]->y > vertexes[1]->y) { std::swap(vertexes[0], vertexes[1]); std::swap(depths[0], depths[1]); }
+	if (vertexes[1]->y > vertexes[2]->y) { std::swap(vertexes[1], vertexes[2]); std::swap(depths[1], depths[2]); }
+	if (vertexes[0]->y > vertexes[1]->y) { std::swap(vertexes[0], vertexes[1]); std::swap(depths[0], depths[1]); }
+
+	float mu = float(vertexes[1]->y - vertexes[0]->y) / float(vertexes[2]->y - vertexes[0]->y);
+	glm::vec2i breakpoint = glm::vec2i(int(vertexes[0]->x + float(vertexes[2]->x - vertexes[0]->x) * mu), vertexes[1]->y);
+	auto l1 = ConstructLine(*vertexes[0], *vertexes[1]);
+	auto l2 = ConstructLine(*vertexes[0], breakpoint);
+	auto l3 = ConstructLine(*vertexes[1], *vertexes[2]);
+	auto l4 = ConstructLine(breakpoint, *vertexes[2]);
+
+	if (l1.size() == l2.size())
+	{
+		for (int i = 0, sz = l1.size(); i < sz; i++)
+		{
+			DrawLine(renderer, l1[i], l2[i], glm::vec3i(0, 0, 255), false, true, depths);
+		}
+	}
+
+	if (l3.size() == l4.size())
+	{
+		for (int i = 0, sz = l3.size(); i < sz; i++)
+		{
+			DrawLine(renderer, l3[i], l4[i], glm::vec3i(0, 0, 255), false, true, depths);
+		}
+	}
+}
+
+void Brezenheim::DrawVertexBuffer(SDL_Renderer* renderer, VertexBuffer* buffer, math::Matrix& transform, bool solid)
 {
 	const auto& points = buffer->GetPoints();
 	const auto& indices = buffer->GetIndices();
@@ -181,6 +315,12 @@ void Brezenheim::DrawVertexBuffer(SDL_Renderer* renderer, VertexBuffer* buffer, 
 		addRasterizedLine({screenPoints[0], screenPoints[1], winding});
 		addRasterizedLine({screenPoints[1], screenPoints[2], winding});
 		addRasterizedLine({screenPoints[2], screenPoints[0], winding});
+
+		if (winding && solid)
+		{
+			float depths[] = { 0.f, 0.f, 0.f };
+			DrawSolidFace(renderer, screenPoints[0], screenPoints[1], screenPoints[2], depths);
+		}
 	}
 
 	// Draw rasterized lines
@@ -188,7 +328,7 @@ void Brezenheim::DrawVertexBuffer(SDL_Renderer* renderer, VertexBuffer* buffer, 
 	{
 		bool dashed = !line.visible;
 		glm::vec3i color = line.visible ? glm::vec3i(255, 255, 255) : glm::vec3i(255, 0, 0);
-		DrawLine(renderer, line.src, line.dest, color, dashed);
+		DrawLine(renderer, line.src, line.dest, color, dashed, false, nullptr);
 	}
 }
 

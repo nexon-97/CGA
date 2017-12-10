@@ -6,13 +6,19 @@
 class ProjectionRenderJob : public cga::RenderJob
 {
 public:
+	enum class RenderMode
+	{
+		Wireframe,
+		Solid,
+		DepthBuffer,
+	};
+
 	ProjectionRenderJob(const glm::vec2i& center);
 
 	virtual void Render(SDL_Window* wnd, SDL_Renderer* renderer) override;
 
 private:
 	void UpdateInput();
-	void UpdateCameraState();
 
 	std::vector<glm::vec2i> m_points;
 	std::vector<glm::vec2i> m_pointsReverse;
@@ -31,4 +37,5 @@ private:
 	float m_fixedAxisRotationAngle = 0.f;
 	glm::vec3f m_fixedAxisStart;
 	glm::vec3f m_fixedAxisEnd;
+	RenderMode m_renderMode = RenderMode::Wireframe;
 };

@@ -27,6 +27,12 @@ App::~App()
 		SDL_DestroyWindow(m_sdlWindow);
 		SDL_Quit();
 	}
+
+	if (!!m_zbufferTex)
+	{
+		SDL_DestroyTexture(m_zbufferTex);
+		delete[] m_zbufferContent;
+	}
 }
 
 SDL_Window* App::GetWindow() const
@@ -50,13 +56,44 @@ bool App::Init()
 		return false;
 
 	m_sdlInitialized = true;
-	if (SDL_CreateWindowAndRenderer(1300, 600, SDL_WINDOW_SHOWN, &m_sdlWindow, &m_renderer) < 0)
+	if (SDL_CreateWindowAndRenderer(1300, 600, SDL_WINDOW_SHOWN | SDL_RENDERER_ACCELERATED, &m_sdlWindow, &m_renderer) < 0)
 		return false;
 	
 	m_renderQueue = std::make_unique<cga::RenderQueue>(m_sdlWindow, m_renderer);
-	m_sdlScreenSurface = SDL_GetWindowSurface(m_sdlWindow);
 
 	return true;
+}
+
+void App::EnableZBuffer()
+{
+	glm::vec2i size;
+	SDL_GetWindowSize(m_sdlWindow, &size.x, &size.y);
+
+	m_zbufferTex = SDL_CreateTexture(m_renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, size.x, size.y);
+	if (!m_zbufferTex)
+	{
+		SDL_ShowSimpleMessageBox(0, "Error", "Can't create zbuffer texture!", m_sdlWindow);
+	}
+
+	m_zbufferContent = new float[size.x * size.y];
+}
+
+void App::ClearZBuffer()
+{
+	if (!!m_zbufferTex)
+	{
+		SDL_SetRenderTarget(m_renderer, m_zbufferTex);
+		SDL_SetRenderDrawColor(m_renderer, 255, 255, 255, 255);
+		SDL_RenderClear(m_renderer);
+		SDL_SetRenderTarget(m_renderer, NULL);
+
+		glm::vec2i size;
+		SDL_GetWindowSize(m_sdlWindow, &size.x, &size.y);
+		for (int i = 0, sz = size.x * size.y; i < sz; i++)
+		{
+			m_zbufferContent[i] = 1.f;
+		}
+	}	
 }
 
 void App::Run()
@@ -91,8 +128,10 @@ void App::Run()
 			}
 		}
 
+		SDL_SetRenderTarget(m_renderer, NULL);
 		SDL_SetRenderDrawColor(m_renderer, 50, 50, 50, 255);
 		SDL_RenderClear(m_renderer);
+		ClearZBuffer();
 
 		Brezenheim::ResetDashFactor();
 
