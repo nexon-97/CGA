@@ -257,8 +257,6 @@ void Brezenheim::DrawVertexBuffer(SDL_Renderer* renderer, VertexBuffer* buffer, 
 	glm::vec2i wndSize;
 	SDL_GetWindowSize(App::GetInstance()->GetWindow(), &wndSize.x, &wndSize.y);
 
-	auto transposed = transform.Transpose();
-
 	struct LineInfo
 	{
 		glm::vec2i src;
@@ -294,11 +292,11 @@ void Brezenheim::DrawVertexBuffer(SDL_Renderer* renderer, VertexBuffer* buffer, 
 		for (int j = 0; j < 3; j++)
 		{
 			auto p = points[indices[i + j]];
-			face.points[j] = Utils::TransformPoint(p, transposed);
+			face.points[j] = Utils::TransformPoint(p, transform);
 		}
 
-		bool isInFrustrum = PerformFrustumCullingTest(face);
-		if (!isInFrustrum) continue;
+		//bool isInFrustrum = PerformFrustumCullingTest(face);
+		//if (!isInFrustrum) continue;
 
 		auto edge1 = face.points[1] - face.points[0];
 		auto edge2 = face.points[2] - face.points[1];

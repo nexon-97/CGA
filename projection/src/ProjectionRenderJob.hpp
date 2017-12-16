@@ -20,15 +20,12 @@ public:
 private:
 	void UpdateInput();
 
-	std::vector<glm::vec2i> m_points;
-	std::vector<glm::vec2i> m_pointsReverse;
+
 	cga::VertexBuffer m_vb;
+	cga::VertexBuffer m_groundVb;
 
 	float m_worldScale = 1.f;
-	glm::vec3f m_cameraPosition;
-	float m_cameraPitch = 0.f;
 	float m_cameraYaw = 0.f;
-	float m_worldRotation = 0.f;
 	cga::math::Matrix m_cameraMatrix;
 	cga::math::Matrix m_projection;
 	glm::vec3f m_worldUp;
@@ -38,4 +35,8 @@ private:
 	glm::vec3f m_fixedAxisStart;
 	glm::vec3f m_fixedAxisEnd;
 	RenderMode m_renderMode = RenderMode::Wireframe;
+
+	float m_cameraAngle = 0.f;
+	float m_cameraOffset = 0.f;
+	bool m_cameraDynamic = false;
 };

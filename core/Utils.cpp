@@ -58,11 +58,24 @@ bool Utils::BoundingBoxOverlap(const glm::recti& a, const glm::recti& b)
 	return xOverlap && yOverlap;
 }
 
-glm::vec3f Utils::TransformPoint(glm::vec3f& point, math::Matrix& transform)
+glm::vec3f Utils::TransformPoint(glm::vec3f& point, math::Matrix& transform, bool normalize)
 {
 	auto pt = glm::vec4f(point, 1.f);
-	auto transformed = transform * pt;
-	return glm::vec3f(transformed);
+	glm::vec4f transformed;
+
+	transformed.x = pt.x * transform.m[0][0] + pt.y * transform.m[1][0] + pt.z * transform.m[2][0] + pt.w * transform.m[3][0];
+	transformed.y = pt.x * transform.m[0][1] + pt.y * transform.m[1][1] + pt.z * transform.m[2][1] + pt.w * transform.m[3][1];
+	transformed.z = pt.x * transform.m[0][2] + pt.y * transform.m[1][2] + pt.z * transform.m[2][2] + pt.w * transform.m[3][2];
+	transformed.w = pt.x * transform.m[0][3] + pt.y * transform.m[1][3] + pt.z * transform.m[2][3] + pt.w * transform.m[3][3];
+
+	if (normalize)
+	{
+		transformed.x /= transformed.w;
+		transformed.y /= transformed.w;
+		transformed.z /= transformed.w;
+	}
+
+	return glm::vec3f(transformed.x, transformed.y, transformed.z);
 }
 
 glm::vec2i Utils::ProjectPoint(const glm::vec3f& point, const glm::vec2i& windowSize)
@@ -84,16 +97,8 @@ math::Matrix Utils::ConstructTransform(const glm::vec3f& position, const glm::qu
 
 math::Matrix Utils::ConstructTranslationMatrix(const glm::vec3f& position)
 {
-	math::Matrix result(0.f);
-
-	result.m[0][0] = 1.f;
-	result.m[1][1] = 1.f;
-	result.m[2][2] = 1.f;
-	result.m[3][3] = 1.f;
-	result.m[3][0] = position.x;
-	result.m[3][1] = position.y;
-	result.m[3][2] = position.z;
-
+	math::Matrix result;
+	result.SetTranslation(const_cast<glm::vec3f&>(position));
 	return result;
 }
 
@@ -121,19 +126,14 @@ math::Matrix Utils::ConstructRotationMatrix(const glm::quat& rotation)
 
 math::Matrix Utils::ConstructScaleMatrix(const glm::vec3f& scale)
 {
-	math::Matrix result(0.f);
-
-	result.m[0][0] = scale.x;
-	result.m[1][1] = scale.y;
-	result.m[2][2] = scale.z;
-	result.m[3][3] = 1.f;
-
+	math::Matrix result;
+	result.SetScale(const_cast<glm::vec3f&>(scale));
 	return result;
 }
 
 math::Matrix Utils::ConstructOrthoProjection(float width, float height, float zNear, float zFar)
 {
-	math::Matrix result(0.f);
+	math::Matrix result;
 
 	result.m[0][0] = 2.f / width;
 	result.m[0][1] = 0.f;
@@ -157,28 +157,26 @@ math::Matrix Utils::ConstructOrthoProjection(float width, float height, float zN
 
 math::Matrix Utils::ConstructPerspectiveProjection(float fovRadians, float aspectRatio, float zNear, float zFar)
 {
-	const float yFac = glm::tan(fovRadians / 2);
-	const float xFac = yFac*aspectRatio;
+	const float yFac = glm::tan(fovRadians / 2.f);
+	const float xFac = yFac * aspectRatio;
+
 	math::Matrix result;
 
 	result.m[0][0] = 1.f / xFac;
-	result.m[0][1] = 0.f;
-	result.m[0][2] = 0.f;
-	result.m[0][3] = 0.f;
-
 	result.m[1][0] = 0.f;
-	result.m[1][1] = 1.f / yFac;
-	result.m[1][2] = 0.f;
-	result.m[1][3] = 0.f;
-
 	result.m[2][0] = 0.f;
-	result.m[2][1] = 0.f;
-	result.m[2][2] = -(zFar + zNear) / (zFar - zNear);
-	result.m[2][3] = -1.f;
-
 	result.m[3][0] = 0.f;
+	result.m[0][1] = 0.f;
+	result.m[1][1] = 1.f / yFac;
+	result.m[2][1] = 0.f;
 	result.m[3][1] = 0.f;
-	result.m[3][2] = -(2.f * zFar*zNear) / (zFar - zNear);
+	result.m[0][2] = 0.f;
+	result.m[1][2] = 0.f;
+	result.m[2][2] = -(zFar + zNear) / (zFar - zNear);
+	result.m[3][2] = -(2.f * zFar * zNear) / (zFar - zNear);
+	result.m[0][3] = 0.f;
+	result.m[1][3] = 0.f;
+	result.m[2][3] = -1.f;
 	result.m[3][3] = 0.f;
 
 	return result;

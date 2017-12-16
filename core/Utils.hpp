@@ -28,7 +28,7 @@ public:
 	static glm::mat3f ConstructTransform(const Pose& pose);
 	static glm::mat3f ConstructTransform(const glm::vec2i& position, float rotation);
 	static glm::vec2f TransformPoint(const glm::vec2f& point, const glm::mat3f& transform);
-	static glm::vec3f TransformPoint(glm::vec3f& point, math::Matrix& transform);
+	static glm::vec3f TransformPoint(glm::vec3f& point, math::Matrix& transform, bool normalize = true);
 	static glm::vec2i ProjectPoint(const glm::vec3f& point, const glm::vec2i& windowSize);
 	static glm::recti ComputeBoundingBox(const std::vector<glm::vec2i>& shape);
 	static bool BoundingBoxOverlap(const glm::recti& a, const glm::recti& b);
